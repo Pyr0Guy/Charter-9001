@@ -6,7 +6,6 @@
 #include "include/App.hpp"
 #include "include/Audio.hpp"
 #include "include/Constants.hpp"
-#include "include/ResourceManager.hpp"
 
 #include "fmod.hpp"
 
@@ -24,20 +23,13 @@ void App::Update()
 {
 	Audio::Update();
 
-	if (IsKeyPressed('X'))
-		Audio::StartSong(Constants::SoundPath + "test.wav");
-
 	if (IsKeyPressed('Z'))
-	{
-		paused = !paused;
-		ResourceManager::GetChannel("test")->setPaused(paused);
-	}
+		Audio::StartSong(Constants::SoundPath + "Music.bank", "Song Tutorial (Sun shining through)");
 
-	if (ResourceManager::CheckIfChannelExsists("test"))
+	if (IsKeyPressed('X'))
 	{
-		unsigned int pos;
-		ResourceManager::GetChannel("test")->getPosition(&pos, FMOD_TIMEUNIT_MS);
-		std::cout << pos << std::endl;
+		paused =! paused;
+		Audio::Pause("Song Tutorial (Sun shining through)", paused);
 	}
 }
 
