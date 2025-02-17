@@ -5,6 +5,7 @@
 std::unordered_map<std::string, FMOD::Sound*> ResourceManager::m_Sounds;
 std::unordered_map<std::string, FMOD::Channel*> ResourceManager::m_Channels;
 std::unordered_map<std::string, FMOD::Studio::EventInstance*> ResourceManager::m_EventInstances;
+std::unordered_map<std::string, Texture2D>	ResourceManager::m_Textures;
 
 FMOD::Sound* ResourceManager::LoadSound(const std::string& name, FMOD::Sound* sound)
 {
@@ -46,4 +47,15 @@ FMOD::Studio::EventInstance* ResourceManager::GetEventInstance(const std::string
 bool ResourceManager::CheckIfInstanceExsists(const std::string& name)
 {
 	return m_EventInstances.find(name) != m_EventInstances.end();
+}
+
+void ResourceManager::LoadTexture2D(const std::string& file, const std::string& name)
+{
+	if (m_Textures.find(name) == m_Textures.end())
+		m_Textures[name] = LoadTexture(file.c_str());
+}
+
+Texture2D ResourceManager::GetTexture(const std::string& name)
+{
+	return m_Textures[name];
 }

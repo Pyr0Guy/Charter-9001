@@ -16,6 +16,7 @@ FMOD::System*			Audio::fmodSysLow = nullptr;
 FMOD::Studio::Bank*		Audio::masterBank = nullptr;
 
 bool					Audio::m_masterBankLoaded = false;
+std::vector<FMOD::Studio::EventInstance*> Audio::m_PauseVector;
 
 void Audio::Init()
 {
@@ -56,7 +57,13 @@ void Audio::Pause(const std::string& songName, bool pause)
 	if (auto* channel = ResourceManager::GetChannel(songName))
 		ERRCHECK(channel->setPaused(pause));
 	else if (auto* instance = ResourceManager::GetEventInstance(songName))
-		ERRCHECK(instance->setPaused(pause));
+	{
+		//ERRCHECK(instance->setPaused(pause));
+
+		FMOD::ChannelGroup* cg = nullptr;
+		ERRCHECK(instance->getChannelGroup(&cg));
+		ERRCHECK(cg->setPaused(pause));
+	}
 	else
 		std::cout << "Audio.cpp. Pause Function: There is no " << songName << " for pause" << std::endl;
 }
@@ -68,7 +75,13 @@ unsigned int Audio::GetSongPosition(const std::string& songName)
 	if (auto* channel = ResourceManager::GetChannel(songName))
 		ERRCHECK(channel->getPosition(&pos, FMOD_TIMEUNIT_MS));
 	else if (auto* instance = ResourceManager::GetEventInstance(songName))
-		ERRCHECK(instance->getTimelinePosition((int*)&pos));
+	{
+		FMOD::ChannelGroup* cg = nullptr;
+		ERRCHECK(instance->getChannelGroup(&cg));
+
+		FMOD::Channel* chan = FindSoundChannel(cg);
+		ERRCHECK(chan->getPosition(&pos, FMOD_TIMEUNIT_MS));
+	}
 	else
 	{
 		std::cout << "There is no: " << songName << std::endl;
@@ -88,7 +101,9 @@ unsigned int Audio::GetSongLength(const std::string& songName)
 	{
 		FMOD::Studio::EventDescription* envDesc;
 		ERRCHECK(instance->getDescription(&envDesc));
-		ERRCHECK(envDesc->getLength((int*)&pos));
+		int tmpPos;
+		ERRCHECK(envDesc->getLength(&tmpPos));
+		pos = static_cast<unsigned int>(tmpPos);
 	}
 	else
 	{
@@ -99,9 +114,45 @@ unsigned int Audio::GetSongLength(const std::string& songName)
 	return pos;
 }
 
+void Audio::SetPosition(const std::string& songName, unsigned int Position)
+{
+	if (auto* sound = ResourceManager::GetChannel(songName))
+		ERRCHECK(sound->setPosition(Position, FMOD_TIMEUNIT_MS));
+	else if (auto* instance = ResourceManager::GetEventInstance(songName))
+	{
+		ERRCHECK(instance->setTimelinePosition(static_cast<int>(Position)));
+	}
+	else
+		std::cout << "There is no: " << songName << std::endl;
+}
+
 void Audio::Update()
 {
 	fmodSys->update();
+
+	if (!m_PauseVector.empty())
+	{
+		FMOD::Studio::EventInstance* instance = m_PauseVector.back();
+		FMOD::Studio::EventDescription* envDesc = nullptr;
+
+		if (instance->getDescription(&envDesc) == FMOD_OK && envDesc)
+		{
+			FMOD_STUDIO_LOADING_STATE state = FMOD_STUDIO_LOADING_STATE_ERROR;
+
+			if (envDesc->getSampleLoadingState(&state) == FMOD_OK &&
+				state == FMOD_STUDIO_LOADING_STATE_LOADED)
+			{
+				char path[512];
+				int retrieved;
+				envDesc->getPath(path, sizeof(path), &retrieved);
+				std::string realName = path;
+				realName = realName.substr(realName.find_first_of('/') + 1);
+				Audio::Pause(realName, true);
+				m_PauseVector.pop_back();
+
+			}
+		}
+	}
 }
 
 void Audio::Destroy()
@@ -133,6 +184,12 @@ void Audio::LoadSongHighLevel(const std::string& path, const std::string& eventN
 
 	ERRCHECK(fmodSys->loadBankFile(path.c_str(), FMOD_STUDIO_LOAD_BANK_NORMAL, &masterBank));
 
+	FMOD_STUDIO_LOADING_STATE state = FMOD_STUDIO_LOADING_STATE_LOADING;
+	while (state != FMOD_STUDIO_LOADING_STATE_LOADED)
+	{
+		masterBank->getLoadingState(&state);
+	}
+
 	//StudioSongData lol;
 	//ResourceManager::LoadStudioSongData(eventName, &lol);
 
@@ -146,8 +203,62 @@ void Audio::LoadSongHighLevel(const std::string& path, const std::string& eventN
 
 	ERRCHECK(fmodSys->getEvent(event.c_str(), &envDesc));
 
-	FMOD::Studio::EventInstance* env = nullptr;
-	ERRCHECK(envDesc->createInstance(&env));
-	ERRCHECK(env->start());
-	ResourceManager::LoadEventInstance(eventName, env);
+	if (envDesc)
+	{
+		FMOD::Studio::EventInstance* eventInstance = nullptr;
+
+		ERRCHECK(envDesc->createInstance(&eventInstance));
+		ERRCHECK(eventInstance->start());
+
+		m_PauseVector.push_back(eventInstance);
+
+		ResourceManager::LoadEventInstance(eventName, eventInstance);
+	}
+}
+
+
+FMOD::Channel* Audio::FindSoundChannel(FMOD::ChannelGroup* channelGroup)
+{
+	if (!channelGroup)
+	{
+		return nullptr;
+	}
+
+	FMOD::Channel* chan = nullptr;
+	FMOD::Sound* sound = nullptr;
+
+	int numChannels = 0;
+	if (channelGroup->getNumChannels(&numChannels) == FMOD_OK && numChannels > 0)
+	{
+		for (int i = 0; i < numChannels; ++i)
+		{
+			if (channelGroup->getChannel(i, &chan) == FMOD_OK)
+			{
+				if (chan->getCurrentSound(&sound) == FMOD_OK && sound)
+				{
+					return chan;
+				}
+			}
+		}
+	}
+
+	int numGroups = 0;
+	if (channelGroup->getNumGroups(&numGroups) == FMOD_OK && numGroups > 0)
+	{
+		FMOD::ChannelGroup* child = nullptr;
+		
+		for (int i = 0; i < numGroups; ++i)
+		{
+			if (channelGroup->getGroup(i, &child) == FMOD_OK && child)
+			{
+				chan = FindSoundChannel(child);
+				if (chan)
+				{
+					return chan;
+				}
+			}
+		}
+	}
+
+	return nullptr;
 }

@@ -10,6 +10,7 @@
 #include <cfenv>
 #include <cmath>
 #include <array>
+#include <mutex>
 
 //Raylib FUCK
 #include <raylib.h>

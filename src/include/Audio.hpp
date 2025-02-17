@@ -8,6 +8,8 @@ private:
 	static void LoadSongLowLevel(const std::string& path, const std::string& SoundName);
 	static void LoadSongHighLevel(const std::string& path, const std::string& eventName);
 
+	static FMOD::Channel* FindSoundChannel(FMOD::ChannelGroup* channelGroup);
+
 public:
 	static void Init();
 
@@ -16,6 +18,8 @@ public:
 
 	static unsigned int GetSongPosition(const std::string& songName);
 	static unsigned int GetSongLength(const std::string& songName);
+
+	static void SetPosition(const std::string& songName, unsigned int Position);
 
 	static void Update();
 	static void Destroy();
@@ -27,4 +31,6 @@ private:
 	static FMOD::System* fmodSysLow;
 
 	static FMOD::Studio::Bank* masterBank;
+
+	static std::vector<FMOD::Studio::EventInstance*> m_PauseVector;
 };	

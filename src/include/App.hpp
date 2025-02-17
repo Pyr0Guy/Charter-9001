@@ -1,4 +1,5 @@
 #pragma once
+#include "Cell.hpp"
 
 class App
 {
@@ -11,4 +12,10 @@ public:
 	void Destroy();
 
 	bool IsClosed();
+
+private:
+	Camera2D m_MainCamera;
+	float m_LinePosition;
+
+	std::vector<Cell*> m_CeilVector;
 };
