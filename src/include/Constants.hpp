@@ -9,7 +9,7 @@ public:
 	static constexpr unsigned int GridWidth = 64;
 	static constexpr unsigned int GridHeight = 64;
 
-	static constexpr unsigned int MaxColumns = 4;
+	static constexpr unsigned int MaxRows = 4;
 	
 	static const std::string title;
 	static const std::string SoundPath;

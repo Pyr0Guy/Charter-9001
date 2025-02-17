@@ -26,13 +26,13 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 
 	int columFuck = static_cast<int>(std::ceil(Conductor::SongMaxLenght / (Conductor::MSPerBeat / 4.0f)));
 
-	for (int j = 0; j < Constants::MaxColumns; j++)
+	for (int j = 0; j < Constants::MaxRows; j++)
 	{
 		for (size_t i = 0; i < columFuck; i++)
 		{
 			Color c = (i + j) % 2 == 0 ? BLACK : GRAY;
 
-			m_CeilVector.emplace_back(new Cell(j, i, j, c));
+			m_CeilVector.emplace_back(new Cell(j, i, j, i, c));
 		}
 	}
 
@@ -42,6 +42,8 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_MainCamera.rotation = 0.f;
 	m_MainCamera.zoom = 1.f;
 	m_MainCamera.offset = { 0.f , 100.f };
+
+	m_CurCell = nullptr;
 
 	ResourceManager::LoadTexture2D(Constants::ImagePath + "arrows_basic.png", "arrow");
 }
@@ -69,7 +71,46 @@ void App::Update()
 		Conductor::SetPosition(0);
 
 	for (auto& cell : m_CeilVector)
-		cell->Update({0.f, m_LinePosition - 100.f});
+	{
+		cell->Update({ 0.f, m_LinePosition - 100.f });
+
+		if (cell->GetActive() == true)
+			m_CurCell = cell->ReturnCell();
+	}
+
+	if (m_CurCell != nullptr)
+	{
+		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+		{
+			if (m_CurCell->m_WithArrow == false)
+			{
+				Note::NoteData lol = {};
+				lol.noteID = m_CurCell->ReturnID();
+				lol.isSustended = false;
+				lol.notePosition = m_CurCell->cellColum * (Conductor::MSPerBeat / 4);
+				lol.sustendedLen = 0;
+
+				m_NoteList.emplace_back(new Note(lol, m_CurCell->GetPosition()));
+				m_NoteList.back()->Update();
+
+				m_CurCell->m_NoteRef = m_NoteList.back();
+				m_CurCell->m_WithArrow = true;
+			}
+			else
+			{
+				auto it = std::find(m_NoteList.begin(), m_NoteList.end(), m_CurCell->m_NoteRef);
+
+				m_CurCell->m_NoteRef = nullptr;
+				m_CurCell->m_WithArrow = false;
+
+				if (it != m_NoteList.end())
+				{
+					delete* it;
+					m_NoteList.erase(it);
+				}
+			}
+		}
+	}
 
 	float cellDuration = Conductor::MSPerBeat / 4.0f;
 	float cell = Conductor::SongPosition / cellDuration;
@@ -84,10 +125,11 @@ void App::Draw()
 
 			ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-			for (int j = 0; j < m_CeilVector.size(); j++)
-			{
-				m_CeilVector[j]->Draw();
-			}
+			for (auto& cell : m_CeilVector)
+				cell->Draw();
+
+			for (auto& note : m_NoteList)
+				note->Draw();
 
 
 		EndMode2D();
@@ -104,6 +146,13 @@ void App::Destroy()
 {
 	for (auto& cell : m_CeilVector)
 		cell->Destroy();
+
+	for (auto& note : m_NoteList)
+		delete note;
+
+	m_NoteList.clear();
+
+	delete m_CurCell;
 
 	Audio::Destroy();
 	CloseWindow();

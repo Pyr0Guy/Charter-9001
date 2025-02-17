@@ -1,18 +1,26 @@
 #pragma once
 
-#include "Sprite.hpp"
+#include "Note.hpp"
 
 class Cell
 {
-private:
-	void SetArrow();
 public:
-	Cell(int x, int y, int ID ,Color c);
+	Cell(int x, int y, int ID, int colum, Color c);
 
 	void Draw();
 	void Update(Vector2 cameraPos);
 
+	Cell* ReturnCell();
+
+	int ReturnID() const;
+	bool GetActive() const;
+	Vector2 GetPosition() const;
+
 	void Destroy();
+
+	Note* m_NoteRef;
+	bool m_WithArrow;
+	int cellColum;
 private:
 	int m_x, m_y;
 
@@ -20,8 +28,4 @@ private:
 	bool m_Active;
 
 	int m_ID;
-
-	bool m_WithArrow;
-
-	Sprite* m_Sprite;
 };
