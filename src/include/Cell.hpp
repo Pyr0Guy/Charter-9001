@@ -18,6 +18,8 @@ public:
 
 	void Destroy();
 
+	Vector2 GetNextCellPosition(int direction) const;
+
 	Note* m_NoteRef;
 	bool m_WithArrow;
 	int cellColum;

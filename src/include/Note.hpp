@@ -20,7 +20,13 @@ public:
 	void Update();
 	void Draw();
 
+	void SetSustainLength(int length);
+	void UpdateSustainSprites(const Vector2& startPos);
+
+	void SetSutended(bool sus);
+
 	NoteData GetNoteData();
+	std::vector<Sprite*> m_SustendedsSprites;
 private:
 	NoteData m_NoteData;
 	Sprite* m_NoteSprite;

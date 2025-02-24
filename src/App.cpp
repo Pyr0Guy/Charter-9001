@@ -44,6 +44,9 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_MainCamera.offset = { 0.f , 100.f };
 
 	m_CurCell = nullptr;
+	m_DragableNote = nullptr;
+	
+	m_isDraging = false;
 
 	ResourceManager::LoadTexture2D(Constants::ImagePath + "arrows_basic.png", "arrow");
 }
@@ -78,8 +81,42 @@ void App::Update()
 			m_CurCell = cell->ReturnCell();
 	}
 
+	Vector2 worldMousePos = GetScreenToWorld2D(GetMousePosition(), m_MainCamera);
+	float deltaY = worldMousePos.y - m_DragStartPos.y;
+
 	if (m_CurCell != nullptr)
 	{
+		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && m_CurCell->m_WithArrow == true)
+		{
+			m_DragableNote = m_CurCell->m_NoteRef;
+			m_DragStartPos = worldMousePos;
+			m_isDraging = true;
+		}
+
+		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && m_isDraging == true)
+		{
+			Vector2 currentMousePos = worldMousePos;
+			float deltaY = currentMousePos.y - m_DragStartPos.y;
+
+			int cells = static_cast<int>(deltaY / Constants::GridHeight);
+
+			//cells = std::clamp(cells, 0, 10);
+			
+			if(cells > 0)
+				m_DragableNote->SetSutended(true);
+			else
+				m_DragableNote->SetSutended(false);
+
+			if (m_DragableNote != nullptr) {
+				m_DragableNote->SetSustainLength(cells);
+			}
+		}
+
+		if (m_isDraging && IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+			m_isDraging = false;
+			m_DragableNote = nullptr;
+		}
+
 		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
 		{
 			if (m_CurCell->m_WithArrow == false)
@@ -112,6 +149,19 @@ void App::Update()
 		}
 	}
 
+	for (auto& note : m_NoteList)
+		note->Update();
+
+	if (m_isDraging == true && GetMousePosition().y >= Constants::WindowHeight - 100)
+	{
+		Conductor::SetPosition(Conductor::GetPosition() + 20);
+	}
+
+	if (m_isDraging == true && GetMousePosition().y <= 100 && m_isDraging == true)
+	{
+		Conductor::SetPosition(Conductor::GetPosition() - 20);
+	}
+
 	float cellDuration = Conductor::MSPerBeat / 4.0f;
 	float cell = Conductor::SongPosition / cellDuration;
 	m_LinePosition = 100.f + (cell * Constants::GridHeight);
@@ -138,6 +188,8 @@ void App::Draw()
 
 		DrawLineEx({ 50, 100 }, { 500, 100 }, 2, RED);
 		DrawText(Pos.c_str(), 0, 0, 24, ORANGE);
+
+		DrawFPS(750, 0);
 
 	EndDrawing();
 }

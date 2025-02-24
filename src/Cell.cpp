@@ -71,3 +71,9 @@ void Cell::Destroy()
 {
 	delete m_NoteRef;
 }
+
+Vector2 Cell::GetNextCellPosition(int direction) const {
+	Vector2 ret = { m_x, m_y + direction + Constants::GridHeight };
+	
+	return ret;
+}

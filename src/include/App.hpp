@@ -22,4 +22,8 @@ private:
 
 	std::list<Note*> m_NoteList;
 	std::vector<Cell*> m_CeilVector;
+
+	Vector2 m_DragStartPos;
+	bool m_isDraging;
+	Note* m_DragableNote;
 };

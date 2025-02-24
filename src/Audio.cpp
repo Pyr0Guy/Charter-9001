@@ -120,7 +120,13 @@ void Audio::SetPosition(const std::string& songName, unsigned int Position)
 		ERRCHECK(sound->setPosition(Position, FMOD_TIMEUNIT_MS));
 	else if (auto* instance = ResourceManager::GetEventInstance(songName))
 	{
-		ERRCHECK(instance->setTimelinePosition(static_cast<int>(Position)));
+		//ERRCHECK(instance->setTimelinePosition(static_cast<int>(Position)));
+		FMOD::ChannelGroup* cg = nullptr;
+		ERRCHECK(instance->getChannelGroup(&cg));
+
+		FMOD::Channel* chan = FindSoundChannel(cg);
+		//chan->setPosition(&pos, FMOD_TIMEUNIT_MS);
+		chan->setPosition(Position, FMOD_TIMEUNIT_MS);
 	}
 	else
 		std::cout << "There is no: " << songName << std::endl;
