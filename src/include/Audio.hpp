@@ -24,6 +24,8 @@ public:
 	static void Update();
 	static void Destroy();
 
+	static bool isLoaded();
+
 private:
 	static bool m_masterBankLoaded;
 

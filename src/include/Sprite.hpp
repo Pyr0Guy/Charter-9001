@@ -2,29 +2,24 @@
 
 #include "types.hpp"
 
+enum class Origin
+{
+	TOP_LEFT,
+	TOP_CENTER,
+	TOP_RIGHT,
+	CENTER,
+	BOTTOM_LEFT,
+	BOTTOM_CENTER,
+	BOTTOM_RIGHT
+};
+
 class Sprite
 {
 private:
-	typedef std::unordered_map<std::string, std::vector<Rectangle>> AnimationList;
-
-	void LoadAllAnimations(std::string XMLPath);
-	void ChangeOrigin(int origin);
+	void ChangeOrigin(Origin origin);
 
 public:
-	typedef enum ORIGIN
-	{
-		TOP_LEFT,
-		TOP_CENTER,
-		TOP_RIGHT,
-		CENTER,
-		BOTTOM_LEFT,
-		BOTTOM_CENTER,
-		BOTTOM_RIGHT
-	} ORIGIN;
-
-public:
-	Sprite(Vector2 pos, const std::string& filepath, const std::string& textureName, Vector2 scale, bool isAnimation, f32 animSpeed, bool loadAll = false);
-	~Sprite();
+	Sprite(Vector2 pos, const std::string& filepath, const std::string& textureName, Vector2 scale, bool isAnimation, f32 animSpeed);
 
 	void Update();
 	void Draw();
@@ -36,22 +31,23 @@ public:
 	void Resume();
 
 	std::string GetCurrentAnimation() const;
-	std::vector<std::string> GetAllAnimations() const;
 	Vector2 GetSpriteSize() const;
 	Vector2 GetSpriteScale() const;
+	Rectangle GetSpriteRect() const;
 	s16 GetSpriteMaxFrames() const;
 	int GetSpriteCurrentFrame() const;
 	Vector2 GetPosition() const;
+	Color GetColor() const;
 
+	void SetColor(const Color& c);
 	void SetAnimationSpeed(f32 speed);
-	void SetOrigin(int origin);
-	void SetPosition(Vector2 pos);
+	void SetOrigin(Origin origin);
+	void SetPosition(const Vector2& pos);
+	void SetScale(const Vector2& scale);
+	void SetRotation(f32 rotation);
 
-	void Move(Vector2 move);
-
-	void LoadAnimation(const std::string& anim);
-
-	bool IsAnimationExsists(const std::string& name) const;
+	void Move(const Vector2& move);
+	void Rotate(f32 rotation);
 private:
 
 	s16 m_MaxFrames;
@@ -63,17 +59,18 @@ private:
 	bool m_isOnPause;
 	bool m_isAnimation;
 
-	AnimationList m_AnimList;
 	Rectangle m_CurFrameRect;
 
 	Vector2 m_Pos;
 	Vector2 m_Scale;
 	f32 m_Rotation;
+	Color m_Color;
 
 	Vector2 m_Origin;
-	s8 m_CurOrigin;
+	Origin m_CurOrigin;
 
 	Texture2D m_Texture;
 
-	std::string m_ThatFuckingStringThatIHate;
+	std::string m_XmlPath;
+	const std::vector<Rectangle>* m_CurrentAnimation = nullptr;
 };

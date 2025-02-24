@@ -167,6 +167,11 @@ void Audio::Destroy()
 	fmodSys->release();
 }
 
+bool Audio::isLoaded()
+{
+	return m_PauseVector.empty();
+}
+
 void ERRCHECK_fn(FMOD_RESULT result, const char* file, int line) {
 	if (result != FMOD_OK)
 		std::cout << "FMOD ERROR: Audio.cpp [Line " << line << "] " << result << "  - " << FMOD_ErrorString(result) << '\n';

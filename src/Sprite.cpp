@@ -3,46 +3,31 @@
 #include "include/tinyxml2.h"
 #include "include/ResourceManager.hpp"
 
-Sprite::Sprite(Vector2 pos, const std::string& filepath, const std::string& textureName, Vector2 scale, bool isAnimation, f32 animSpeed, bool loadAll)
-    : m_Pos(pos), m_Scale(scale), m_MaxFrames(0), m_CurFrame(0), m_CurAnim(""), m_isOneShot(false), m_isOnPause(false), m_isAnimation(isAnimation), m_AnimSpeed(animSpeed / 60.f), m_Rotation(0)
+Sprite::Sprite(Vector2 pos, const std::string& filepath, const std::string& textureName, Vector2 scale, bool isAnimation, f32 animSpeed)
+    : m_Pos(pos), m_Scale(scale), m_MaxFrames(0), m_CurFrame(0), m_CurAnim(""), m_isOneShot(false), m_isOnPause(false), m_isAnimation(isAnimation), m_AnimSpeed(animSpeed / 60.f), m_Rotation(0), m_Color(WHITE)
 {
-    m_CurOrigin = ORIGIN::CENTER;
+    m_CurOrigin = Origin::CENTER;
 
     {
-        std::stringstream ss;
-        ss << filepath << ".png";
-
-        std::string TexturePath = ss.str();
+        std::string TexturePath = filepath + ".png";
         ResourceManager::LoadTexture2D(TexturePath, textureName);
-        //m_Texture = LoadTexture(TexturePath.c_str());
         m_Texture = ResourceManager::GetTexture(textureName);
     }
 
-    {
-        if (isAnimation == true)
-        {
-            std::stringstream ss;
-            ss << filepath << ".xml";
-            m_ThatFuckingStringThatIHate = ss.str();
-
-            if (loadAll == true)
-                LoadAllAnimations(m_ThatFuckingStringThatIHate);
-        }
-        else
-            m_CurFrameRect = { 0.f, 0.f, static_cast<float>(m_Texture.width), static_cast<float>(m_Texture.height) };
-    }
+    if (isAnimation == true)
+        m_XmlPath = filepath + ".xml";
+    else
+        m_CurFrameRect = { 0.f, 0.f, static_cast<float>(m_Texture.width), static_cast<float>(m_Texture.height) };
 
     ChangeOrigin(m_CurOrigin);
-}
-
-Sprite::~Sprite()
-{
-    //UnloadTexture(m_Texture);
+    m_CurrentAnimation = nullptr;
 }
 
 void Sprite::Update()
 {
-    if (m_isAnimation == true && m_CurAnim != "" && m_isOnPause == false)
+    if (!m_CurrentAnimation) return;
+
+    if (m_isAnimation == true && m_isOnPause == false)
     {
         m_CurFrame += m_AnimSpeed;
 
@@ -57,7 +42,7 @@ void Sprite::Update()
                 m_CurFrame = 0.f;
         }
 
-        m_CurFrameRect = m_AnimList[m_CurAnim][m_CurFrame];
+        m_CurFrameRect = (*m_CurrentAnimation)[static_cast<int>(m_CurFrame)];
         ChangeOrigin(m_CurOrigin);
     }
 }
@@ -65,33 +50,26 @@ void Sprite::Update()
 void Sprite::Draw()
 {
     Rectangle dest = { m_Pos.x, m_Pos.y, m_CurFrameRect.width * m_Scale.x, m_CurFrameRect.height * m_Scale.y };
-    DrawTexturePro(m_Texture, m_CurFrameRect, dest, m_Origin, m_Rotation, WHITE);
+    DrawTexturePro(m_Texture, m_CurFrameRect, dest, m_Origin, m_Rotation, m_Color);
 }
 
 void Sprite::Play(const std::string& anim)
 {
-    if (IsAnimationExsists(anim) == false)
-    {
-        std::cout << "No such animation with name: " << anim << std::endl;
-        return;
+    if (!ResourceManager::HasAnimation(m_XmlPath, anim)) {
+        ResourceManager::LoadAnimation(m_XmlPath, anim);
     }
 
-    if (anim != m_CurAnim)
-    {
-        m_isOneShot = false;
-        m_isOnPause = false;
-        m_CurAnim = anim;
-        m_CurFrame = 0;
-        m_MaxFrames = m_AnimList[m_CurAnim].size();
-    }
+    m_CurrentAnimation = &ResourceManager::GetAnimation(m_XmlPath, anim);
+    m_MaxFrames = static_cast<s16>(m_CurrentAnimation->size());
+    m_CurFrame = 0;
+    m_isOneShot = false;
+    m_CurAnim = anim;
 }
 
 void Sprite::PlayOneShot(const std::string& anim)
 {
     Play(anim);
-
-    if (m_isOneShot == false)
-        m_isOneShot = true;
+    m_isOneShot = true;
 }
 
 void Sprite::Pause()
@@ -109,16 +87,6 @@ std::string Sprite::GetCurrentAnimation() const
     return m_CurAnim;
 }
 
-std::vector<std::string> Sprite::GetAllAnimations() const
-{
-    std::vector<std::string> animations;
-
-    for (const auto& animName : m_AnimList)
-        animations.push_back(animName.first);
-
-    return animations;
-}
-
 Vector2 Sprite::GetSpriteSize() const
 {
     if (m_isAnimation == true)
@@ -130,6 +98,14 @@ Vector2 Sprite::GetSpriteSize() const
 Vector2 Sprite::GetSpriteScale() const
 {
     return m_Scale;
+}
+
+Rectangle Sprite::GetSpriteRect() const
+{
+    if (m_isAnimation == true)
+        return { m_Pos.x, m_Pos.y, m_CurFrameRect.width * m_Scale.x, m_CurFrameRect.height * m_Scale.y };
+
+    return { m_Pos.x, m_Pos.y, static_cast<float>(m_Texture.width) * m_Scale.x, static_cast<float>(m_Texture.height) * m_Scale.y };
 }
 
 s16 Sprite::GetSpriteMaxFrames() const
@@ -147,77 +123,43 @@ Vector2 Sprite::GetPosition() const
     return m_Pos;
 }
 
-void Sprite::LoadAllAnimations(std::string XMLPath)
+Color Sprite::GetColor() const
 {
-    tinyxml2::XMLDocument doc;
-    doc.LoadFile(XMLPath.c_str());
+    return m_Color;
+}
 
-    tinyxml2::XMLElement* rootElement = doc.FirstChildElement("TextureAtlas");
+void Sprite::ChangeOrigin(Origin origin) {
+    const float width = m_CurFrameRect.width * m_Scale.x;
+    const float height = m_CurFrameRect.height * m_Scale.y;
 
-    for (tinyxml2::XMLElement* subElement = rootElement->FirstChildElement("SubTexture"); subElement != nullptr; subElement = subElement->NextSiblingElement("SubTexture"))
-    {
-        std::string name = subElement->Attribute("name");
-        size_t start = name.find(" ") + 1;
-        size_t end = name.find("0") - start;
-        name = name.substr(start, end);
-
-        const char* xPos = subElement->Attribute("x");
-        int x = std::atoi(xPos);
-
-        const char* yPos = subElement->Attribute("y");
-        int y = std::atoi(yPos);
-
-        const char* frameWidth = subElement->Attribute("width");
-        int Width = std::atoi(frameWidth);
-
-        const char* frameHeight = subElement->Attribute("height");
-        int Height = std::atoi(frameHeight);
-
-        Rectangle frame;
-        frame.x = x;
-        frame.y = y;
-        frame.width = Width;
-        frame.height = Height;
-
-        m_AnimList[name].push_back(frame);
+    switch (origin) {
+        case Origin::TOP_LEFT:
+            m_Origin = { 0, 0 };
+            break;
+        case Origin::TOP_CENTER:
+            m_Origin = { width * 0.5f, 0 };
+            break;
+        case Origin::TOP_RIGHT:
+            m_Origin = { width, 0 };
+            break;
+        case Origin::CENTER:
+            m_Origin = { width * 0.5f, height * 0.5f };
+            break;
+        case Origin::BOTTOM_LEFT:
+            m_Origin = { 0, height };
+            break;
+        case Origin::BOTTOM_CENTER:
+            m_Origin = { width * 0.5f, height };
+            break;
+        case Origin::BOTTOM_RIGHT:
+            m_Origin = { width, height };
+            break;
     }
 }
 
-void Sprite::ChangeOrigin(int origin)
+void Sprite::SetColor(const Color& c)
 {
-    Vector2 texture;
-
-    if (m_isAnimation == false)
-        texture = { static_cast<float>(m_Texture.width), static_cast<float>(m_Texture.height) };
-    else
-        texture = { m_CurFrameRect.width, m_CurFrameRect.height };
-
-    switch (origin)
-    {
-    case TOP_LEFT:
-        m_Origin = { 0.f, 0.f };
-        break;
-    case TOP_CENTER:
-        m_Origin = { ((float)texture.x / 2.f) * m_Scale.x, 0.f };
-        break;
-    case TOP_RIGHT:
-        m_Origin = { (float)texture.x * m_Scale.x, 0.f };
-        break;
-    case CENTER:
-        m_Origin = { ((float)texture.x / 2.f) * m_Scale.x, ((float)texture.y / 2.f) * m_Scale.y };
-        break;
-    case BOTTOM_LEFT:
-        m_Origin = { 0.f, (float)texture.y * m_Scale.y };
-        break;
-    case BOTTOM_CENTER:
-        m_Origin = { ((float)texture.x / 2.f) * m_Scale.x, (float)texture.y * m_Scale.y };
-        break;
-    case BOTTOM_RIGHT:
-        m_Origin = { (float)texture.x * m_Scale.x, (float)texture.y * m_Scale.y };
-        break;
-    default:
-        break;
-    }
+    m_Color = c;
 }
 
 void Sprite::SetAnimationSpeed(f32 speed)
@@ -225,63 +167,35 @@ void Sprite::SetAnimationSpeed(f32 speed)
     m_AnimSpeed = speed;
 }
 
-void Sprite::SetOrigin(int origin)
+void Sprite::SetOrigin(Origin origin)
 {
     m_CurOrigin = origin;
     ChangeOrigin(m_CurOrigin);
 }
 
-void Sprite::SetPosition(Vector2 pos)
+void Sprite::SetPosition(const Vector2& pos)
 {
     m_Pos = pos;
 }
 
-void Sprite::Move(Vector2 move)
+void Sprite::SetScale(const Vector2& scale)
+{
+    m_Scale = scale;
+    ChangeOrigin(m_CurOrigin);
+}
+
+void Sprite::SetRotation(f32 rotation)
+{
+    m_Rotation = rotation;
+}
+
+void Sprite::Move(const Vector2& move)
 {
     m_Pos.x += move.x;
     m_Pos.y += move.y;
 }
 
-void Sprite::LoadAnimation(const std::string& anim)
+void Sprite::Rotate(f32 rotation)
 {
-    tinyxml2::XMLDocument doc;
-    doc.LoadFile(m_ThatFuckingStringThatIHate.c_str());
-
-    tinyxml2::XMLElement* rootElement = doc.FirstChildElement("TextureAtlas");
-
-    for (tinyxml2::XMLElement* subElement = rootElement->FirstChildElement("SubTexture"); subElement != nullptr; subElement = subElement->NextSiblingElement("SubTexture"))
-    {
-        std::string name = subElement->Attribute("name");
-        size_t start = name.find(" ") + 1;
-        size_t end = name.find("0") - start;
-        name = name.substr(start, end);
-        //If not found Animation name in string
-        if (name.find(anim) == std::string::npos)
-            continue;
-
-        const char* xPos = subElement->Attribute("x");
-        int x = std::atoi(xPos);
-
-        const char* yPos = subElement->Attribute("y");
-        int y = std::atoi(yPos);
-
-        const char* frameWidth = subElement->Attribute("width");
-        int Width = std::atoi(frameWidth);
-
-        const char* frameHeight = subElement->Attribute("height");
-        int Height = std::atoi(frameHeight);
-
-        Rectangle frame;
-        frame.x = x;
-        frame.y = y;
-        frame.width = Width;
-        frame.height = Height;
-
-        m_AnimList[name].push_back(frame);
-    }
-}
-
-bool Sprite::IsAnimationExsists(const std::string& name) const
-{
-    return (m_AnimList.find(name) != m_AnimList.end());
+    m_Rotation += rotation;
 }

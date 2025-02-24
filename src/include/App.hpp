@@ -26,4 +26,5 @@ private:
 	Vector2 m_DragStartPos;
 	bool m_isDraging;
 	Note* m_DragableNote;
+	bool m_DragEndNote;
 };

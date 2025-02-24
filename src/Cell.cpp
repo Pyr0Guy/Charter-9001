@@ -21,7 +21,7 @@ void Cell::Draw()
 	DrawRectangle(m_x, m_y, Constants::GridWidth, Constants::GridHeight, m_Color);
 }
 
-void Cell::Update(Vector2 cameraPos)
+void Cell::Update(const Vector2& cameraPos)
 {
 	Vector2 mousePos = GetMousePosition();
 
@@ -69,7 +69,7 @@ Vector2 Cell::GetPosition() const
 
 void Cell::Destroy()
 {
-	delete m_NoteRef;
+	//delete m_NoteRef;
 }
 
 Vector2 Cell::GetNextCellPosition(int direction) const {

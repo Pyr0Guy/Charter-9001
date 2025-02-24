@@ -56,22 +56,37 @@ void App::Update()
 	Audio::Update();
 	Conductor::Update();
 
-	if(IsKeyPressed(KEY_SPACE))
+	if (Audio::isLoaded() == true)
 	{
-		paused = !paused;
-		Conductor::SetPause(paused);
+		if (IsKeyPressed(KEY_SPACE))
+		{
+			paused = !paused;
+			Conductor::SetPause(paused);
+		}
+
+		m_MainCamera.target = { 0.f, m_LinePosition };
+
+		if (IsKeyPressed('Q'))
+			Conductor::SetPosition(Conductor::SongMaxLenght - 2000);
+
+		if (Conductor::SongPosition >= Conductor::SongMaxLenght - 1)
+			Conductor::SetPosition(Conductor::SongMaxLenght);
+
+		if (IsKeyPressed(KEY_ENTER))
+			Conductor::SetPosition(0);
+
+		if(GetMouseWheelMove() != 0)
+			Conductor::SetPosition(Conductor::SongPosition - (int)GetMouseWheelMove() * Constants::MouseWheelMult);
+
+		if(IsKeyDown(KEY_UP))
+			Conductor::SetPosition(Conductor::SongPosition - Constants::MouseWheelMult);
+
+		if (IsKeyDown(KEY_DOWN))
+			Conductor::SetPosition(Conductor::SongPosition + Constants::MouseWheelMult);
+
+		if (Conductor::SongPosition <= -1)
+			Conductor::SetPosition(0);
 	}
-
-	m_MainCamera.target = { 0.f, m_LinePosition };
-
-	if (IsKeyPressed('Q'))
-		Conductor::SetPosition(Conductor::SongMaxLenght - 2000);
-
-	if (Conductor::SongPosition >= Conductor::SongMaxLenght - 1)
-		Conductor::SetPosition(Conductor::SongMaxLenght);
-
-	if (IsKeyPressed(KEY_ENTER))
-		Conductor::SetPosition(0);
 
 	for (auto& cell : m_CeilVector)
 	{
@@ -86,21 +101,43 @@ void App::Update()
 
 	if (m_CurCell != nullptr)
 	{
-		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && m_CurCell->m_WithArrow == true)
+		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
 		{
-			m_DragableNote = m_CurCell->m_NoteRef;
-			m_DragStartPos = worldMousePos;
-			m_isDraging = true;
+			for (auto& note : m_NoteList)
+			{
+				if (note->isMouseOverEndSus(worldMousePos))
+				{
+					m_DragableNote = note;
+					m_DragEndNote = true;
+					m_isDraging = true;
+					m_DragStartPos = worldMousePos;
+					break;
+				}
+			}
+
+			if (m_DragableNote == nullptr && m_CurCell->m_WithArrow == true)
+			{
+				m_DragableNote = m_CurCell->m_NoteRef;
+				m_DragEndNote = false;
+				m_isDraging = true;
+				m_DragStartPos = worldMousePos;
+			}
+
 		}
 
 		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && m_isDraging == true)
 		{
 			Vector2 currentMousePos = worldMousePos;
-			float deltaY = currentMousePos.y - m_DragStartPos.y;
+			float deltaY;
+
+			if (m_DragEndNote == false)
+				deltaY = currentMousePos.y - m_DragStartPos.y;
+			else
+				deltaY = currentMousePos.y - (Constants::GridHeight * 2); //IDK how it work
 
 			int cells = static_cast<int>(deltaY / Constants::GridHeight);
 
-			//cells = std::clamp(cells, 0, 10);
+			cells = std::max(0, cells);
 			
 			if(cells > 0)
 				m_DragableNote->SetSutended(true);
@@ -112,9 +149,11 @@ void App::Update()
 			}
 		}
 
-		if (m_isDraging && IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+		if (m_isDraging && IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) 
+		{
 			m_isDraging = false;
 			m_DragableNote = nullptr;
+			m_DragEndNote = false;
 		}
 
 		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
@@ -171,6 +210,8 @@ void App::Draw()
 {
 	BeginDrawing();
 
+	if (Audio::isLoaded() == true)
+	{
 		BeginMode2D(m_MainCamera);
 
 			ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
@@ -183,6 +224,7 @@ void App::Draw()
 
 
 		EndMode2D();
+	}
 
 		std::string Pos = std::to_string(Conductor::SongPosition) + "/" + std::to_string(Conductor::SongMaxLenght);
 
@@ -197,14 +239,23 @@ void App::Draw()
 void App::Destroy()
 {
 	for (auto& cell : m_CeilVector)
+	{
 		cell->Destroy();
+		cell = nullptr;
+	}
+
+	m_CeilVector.clear();
 
 	for (auto& note : m_NoteList)
+	{
 		delete note;
+		note = nullptr;
+	}
 
 	m_NoteList.clear();
 
 	delete m_CurCell;
+	m_CurCell = nullptr;
 
 	Audio::Destroy();
 	CloseWindow();

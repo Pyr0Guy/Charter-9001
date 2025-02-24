@@ -8,7 +8,7 @@ public:
 	Cell(int x, int y, int ID, int colum, Color c);
 
 	void Draw();
-	void Update(Vector2 cameraPos);
+	void Update(const Vector2& cameraPos);
 
 	Cell* ReturnCell();
 
