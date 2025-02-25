@@ -8,15 +8,13 @@ public:
 	Cell(int x, int y, int ID, int colum, Color c);
 
 	void Draw();
-	void Update(const Vector2& cameraPos);
+	void Update(const Vector2& mousePos);
 
 	Cell* ReturnCell();
 
 	int ReturnID() const;
 	bool GetActive() const;
 	Vector2 GetPosition() const;
-
-	void Destroy();
 
 	Vector2 GetNextCellPosition(int direction) const;
 

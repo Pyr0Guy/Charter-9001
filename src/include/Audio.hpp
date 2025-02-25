@@ -9,6 +9,7 @@ private:
 	static void LoadSongHighLevel(const std::string& path, const std::string& eventName);
 
 	static FMOD::Channel* FindSoundChannel(FMOD::ChannelGroup* channelGroup);
+	static std::vector<FMOD::Channel*> FindSoundChannels(FMOD::ChannelGroup* channelGroup);
 
 public:
 	static void Init();

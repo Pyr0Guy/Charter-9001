@@ -1,9 +1,12 @@
 #pragma once
-#include "Cell.hpp"
-#include "Note.hpp"
+#include "ChartRegion.hpp"
 
 class App
 {
+private:
+	void LoadAnimations();
+	
+	void ConductorControll();
 public:
 	App(unsigned int Width, unsigned int Height, const std::string& title);
 
@@ -18,13 +21,10 @@ private:
 	Camera2D m_MainCamera;
 	float m_LinePosition;
 
-	Cell* m_CurCell;
+	Vector2 m_WorldMousePos;
 
-	std::list<Note*> m_NoteList;
-	std::vector<Cell*> m_CeilVector;
-
-	Vector2 m_DragStartPos;
-	bool m_isDraging;
-	Note* m_DragableNote;
-	bool m_DragEndNote;
+	//Vectors for future
+	float m_ChartStartYPos;
+	std::vector<ChartRegion*> m_Charts;
+	std::vector<std::string> m_ChartNames;
 };

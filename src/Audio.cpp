@@ -124,9 +124,11 @@ void Audio::SetPosition(const std::string& songName, unsigned int Position)
 		FMOD::ChannelGroup* cg = nullptr;
 		ERRCHECK(instance->getChannelGroup(&cg));
 
-		FMOD::Channel* chan = FindSoundChannel(cg);
-		//chan->setPosition(&pos, FMOD_TIMEUNIT_MS);
-		chan->setPosition(Position, FMOD_TIMEUNIT_MS);
+		std::vector<FMOD::Channel*> chans = FindSoundChannels(cg);
+		
+		for (auto chan : chans)
+			chan->setPosition(Position, FMOD_TIMEUNIT_MS);
+
 	}
 	else
 		std::cout << "There is no: " << songName << std::endl;
@@ -272,4 +274,52 @@ FMOD::Channel* Audio::FindSoundChannel(FMOD::ChannelGroup* channelGroup)
 	}
 
 	return nullptr;
+}
+
+std::vector<FMOD::Channel*> Audio::FindSoundChannels(FMOD::ChannelGroup* channelGroup)
+{
+	if (!channelGroup)
+	{
+		return {};
+	}
+
+	std::vector<FMOD::Channel*> channelVector;
+
+	FMOD::Channel* chan = nullptr;
+	FMOD::Sound* sound = nullptr;
+
+	int numChannels = 0;
+	if (channelGroup->getNumChannels(&numChannels) == FMOD_OK && numChannels > 0)
+	{
+		for (int i = 0; i < numChannels; ++i)
+		{
+			if (channelGroup->getChannel(i, &chan) == FMOD_OK)
+			{
+				if (chan->getCurrentSound(&sound) == FMOD_OK && sound)
+				{
+					channelVector.push_back(chan);
+				}
+			}
+		}
+	}
+
+	int numGroups = 0;
+	if (channelGroup->getNumGroups(&numGroups) == FMOD_OK && numGroups > 0)
+	{
+		FMOD::ChannelGroup* child = nullptr;
+
+		for (int i = 0; i < numGroups; ++i)
+		{
+			if (channelGroup->getGroup(i, &child) == FMOD_OK && child)
+			{
+				chan = FindSoundChannel(child);
+				if (chan)
+				{
+					channelVector.push_back(chan);
+				}
+			}
+		}
+	}
+
+	return channelVector;
 }
