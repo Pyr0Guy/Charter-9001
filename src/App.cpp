@@ -1,7 +1,5 @@
 #include "pch.hpp"
 
-#define RAYGUI_IMPLEMENTATION
-#include "include/raygui.h"
 #include "raymath.h"
 
 #include "include/Cell.hpp"
@@ -38,7 +36,7 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 		m_Charts.emplace_back(new ChartRegion(pos, m_ChartNames[i], columFuck));
 	}
 
-
+	bg = nullptr;
 	m_LinePosition = m_ChartStartYPos;
 
 	m_MainCamera.target = { 0.f, m_LinePosition };
@@ -62,6 +60,25 @@ void App::Update()
 
 	ConductorControll();
 
+	//Funne
+	if (IsFileDropped())
+	{
+		FilePathList droppedFiles = LoadDroppedFiles();
+
+		if (droppedFiles.count > 0 &&
+			(IsFileExtension(droppedFiles.paths[0], ".jpg") || IsFileExtension(droppedFiles.paths[0], ".png") || IsFileExtension(droppedFiles.paths[0], ".jpeg")))
+		{
+			ResourceManager::DeleteTexture("bg");
+			bg = new Sprite({ 0, 0 }, droppedFiles.paths[0], "bg", { 1.f, 1.f }, false, 1.f);
+			bg->SetOrigin(Origin::TOP_LEFT);
+			bg->SetSize({ Constants::WindowWidth, Constants::WindowHeight });
+		}
+
+		//bg->Update();
+
+		UnloadDroppedFiles(droppedFiles);
+	}
+
 	float cellDuration = Conductor::MSPerBeat / 4.0f;
 	float cell = Conductor::SongPosition / cellDuration;
 	m_LinePosition = 100.f + (cell * Constants::GridHeight);
@@ -70,12 +87,14 @@ void App::Update()
 void App::Draw()
 {
 	BeginDrawing();
+		ClearBackground(WHITE);
+
+		if(bg != nullptr)
+			bg->Draw();
 
 		if (Audio::isLoaded() == true)
 		{
 			BeginMode2D(m_MainCamera);
-
-				ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
 				for (auto& chart : m_Charts)
 					chart->Draw();

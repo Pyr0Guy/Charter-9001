@@ -62,6 +62,16 @@ Texture2D ResourceManager::GetTexture(const std::string& name)
 	return m_Textures[name];
 }
 
+void ResourceManager::DeleteTexture(const std::string& name)
+{
+    //UnloadTexture already use Raylib
+    if (m_Textures.find(name) != m_Textures.end())
+    {
+        UnloadTexture(m_Textures[name]);
+        m_Textures.erase(name);
+    }
+}
+
 void ResourceManager::LoadAnimation(const std::string& xmlPath, const std::string& animName) {
     // ≈сли анимаци€ уже загружена - пропускаем
     if (m_Animations[xmlPath].count(animName)) return;

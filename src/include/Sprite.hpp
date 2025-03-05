@@ -38,6 +38,7 @@ public:
 	int GetSpriteCurrentFrame() const;
 	Vector2 GetPosition() const;
 	Color GetColor() const;
+	Vector2 GetSize() const;
 
 	void SetColor(const Color& c);
 	void SetAnimationSpeed(f32 speed);
@@ -45,6 +46,7 @@ public:
 	void SetPosition(const Vector2& pos);
 	void SetScale(const Vector2& scale);
 	void SetRotation(f32 rotation);
+	void SetSize(const Vector2& size);
 
 	void Move(const Vector2& move);
 	void Rotate(f32 rotation);

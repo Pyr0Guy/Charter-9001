@@ -14,6 +14,3 @@ typedef int64_t s64;
 
 typedef float f32;
 typedef double f64;
-
-#define WINDOW_WIDTH 1400
-#define WINDOW_HEIGHT 1050

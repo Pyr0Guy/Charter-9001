@@ -1,5 +1,6 @@
 #pragma once
 #include "ChartRegion.hpp"
+#include "Button.hpp"
 
 class App
 {
@@ -27,4 +28,8 @@ private:
 	float m_ChartStartYPos;
 	std::vector<ChartRegion*> m_Charts;
 	std::vector<std::string> m_ChartNames;
+
+	Sprite* bg;
+
+	//Buttons
 };

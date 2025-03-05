@@ -38,6 +38,7 @@ public:
 
 	static void LoadTexture2D(const std::string& file, const std::string& name);
 	static Texture2D GetTexture(const std::string& name);
+	static void DeleteTexture(const std::string& name);
 
 	static void LoadAnimation(const std::string& xmlPath, const std::string& animName);
 	static const AnimationFrames& GetAnimation(const std::string& xmlPath, const std::string& animName);

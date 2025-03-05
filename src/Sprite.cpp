@@ -9,7 +9,7 @@ Sprite::Sprite(Vector2 pos, const std::string& filepath, const std::string& text
     m_CurOrigin = Origin::CENTER;
 
     {
-        std::string TexturePath = filepath + ".png";
+        std::string TexturePath = filepath;
         ResourceManager::LoadTexture2D(TexturePath, textureName);
         m_Texture = ResourceManager::GetTexture(textureName);
     }
@@ -128,6 +128,11 @@ Color Sprite::GetColor() const
     return m_Color;
 }
 
+Vector2 Sprite::GetSize() const
+{
+    return { static_cast<float>(m_Texture.width), static_cast<float>(m_Texture.height) };
+}
+
 void Sprite::ChangeOrigin(Origin origin) {
     const float width = m_CurFrameRect.width * m_Scale.x;
     const float height = m_CurFrameRect.height * m_Scale.y;
@@ -187,6 +192,12 @@ void Sprite::SetScale(const Vector2& scale)
 void Sprite::SetRotation(f32 rotation)
 {
     m_Rotation = rotation;
+}
+
+void Sprite::SetSize(const Vector2& size)
+{
+    m_Texture.width = size.x;
+    m_Texture.height = size.y;
 }
 
 void Sprite::Move(const Vector2& move)

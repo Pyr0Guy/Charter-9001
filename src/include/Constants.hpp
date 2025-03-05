@@ -12,6 +12,8 @@ public:
 	static constexpr unsigned int MaxRows = 4;
 
 	static constexpr unsigned int MouseWheelMult = 32;
+
+	static constexpr unsigned int FontSize = 24;
 	
 	static const std::string title;
 	static const std::string SoundPath;
