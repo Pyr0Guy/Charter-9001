@@ -13,6 +13,8 @@ public:
 	static void SetPosition(unsigned int Position);
 	static unsigned int GetPosition();
 
+	static std::string GetSongName();
+
 	static float SongSpeed;
 
 	static int SongMaxLenght;

@@ -80,6 +80,16 @@ void ChartRegion::Draw()
 		note->Draw();
 }
 
+std::string ChartRegion::GetOwner() const
+{
+	return m_whichRegion;
+}
+
+std::list<Note*> ChartRegion::GetAllNotes() const
+{
+	return m_AllNotes;
+}
+
 void ChartRegion::NoteHandling(const Vector2& mousePos)
 {
 	float deltaY = mousePos.y - m_DragStartPos.y;

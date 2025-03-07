@@ -72,3 +72,8 @@ unsigned int Conductor::GetPosition()
 	return Audio::GetSongPosition(m_songName);
 }
 
+std::string Conductor::GetSongName()
+{
+	return m_songName;
+}
+

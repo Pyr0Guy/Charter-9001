@@ -1,6 +1,5 @@
 #pragma once
 #include "ChartRegion.hpp"
-#include "Button.hpp"
 
 class App
 {
@@ -8,6 +7,8 @@ private:
 	void LoadAnimations();
 	
 	void ConductorControll();
+
+	void ExportFuckingChartGodHelpUsAll();
 public:
 	App(unsigned int Width, unsigned int Height, const std::string& title);
 
@@ -31,5 +32,5 @@ private:
 
 	Sprite* bg;
 
-	//Buttons
+	//Gui
 };

@@ -2,6 +2,13 @@
 
 #include "raymath.h"
 
+#define RAYGUI_IMPLEMENTATION
+#include "include/raygui/raygui.h"
+#undef RAYGUI_IMPLEMENTATION 
+
+#define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
+#include "include/raygui/gui_window_file_dialog.h"
+
 #include "include/Cell.hpp"
 #include "include/App.hpp"
 #include "include/Audio.hpp"
@@ -11,7 +18,10 @@
 
 #include "fmod.hpp"
 
+#include "include/json.hpp"
+
 bool paused = true;
+GuiWindowFileDialogState m_FileDialog;
 
 App::App(unsigned int Width, unsigned int Height, const std::string& title)
 {
@@ -44,21 +54,33 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_MainCamera.zoom = 1.f;
 	m_MainCamera.offset = { 0.f , 100.f };
 
+	std::string dir = std::string(GetWorkingDirectory()) + "\\assets";
+	m_FileDialog = InitGuiWindowFileDialog(dir.c_str());
+
 	ResourceManager::LoadTexture2D(Constants::ImagePath + "arrows_basic.png", "arrow");
 	LoadAnimations();
 }
 
 void App::Update()
 {
+	if (m_FileDialog.windowActive == true)
+	{
+		Conductor::SetPause(true);
+		paused = true;
+	}
+
 	Audio::Update();
 	Conductor::Update();
 
 	m_WorldMousePos = GetScreenToWorld2D(GetMousePosition(), m_MainCamera);
 
-	for (auto& chart : m_Charts)
-		chart->Update(m_WorldMousePos);
+	if (m_FileDialog.windowActive == false)
+	{
+		for (auto& chart : m_Charts)
+			chart->Update(m_WorldMousePos);
 
-	ConductorControll();
+		ConductorControll();
+	}
 
 	//Funne
 	if (IsFileDropped())
@@ -69,14 +91,22 @@ void App::Update()
 			(IsFileExtension(droppedFiles.paths[0], ".jpg") || IsFileExtension(droppedFiles.paths[0], ".png") || IsFileExtension(droppedFiles.paths[0], ".jpeg")))
 		{
 			ResourceManager::DeleteTexture("bg");
+			bg = nullptr;
 			bg = new Sprite({ 0, 0 }, droppedFiles.paths[0], "bg", { 1.f, 1.f }, false, 1.f);
 			bg->SetOrigin(Origin::TOP_LEFT);
 			bg->SetSize({ Constants::WindowWidth, Constants::WindowHeight });
 		}
-
 		//bg->Update();
 
 		UnloadDroppedFiles(droppedFiles);
+	}
+
+	//Export Chart
+	if (m_FileDialog.SelectFilePressed)
+	{
+		ExportFuckingChartGodHelpUsAll();
+
+		m_FileDialog.SelectFilePressed = false;
 	}
 
 	float cellDuration = Conductor::MSPerBeat / 4.0f;
@@ -106,6 +136,19 @@ void App::Draw()
 
 		DrawLineEx({ 100, 100 }, { 662, 100 }, 2, RED);
 		DrawText(Pos.c_str(), 0, 0, 24, ORANGE);
+
+		if (m_FileDialog.windowActive) 
+			GuiLock();
+
+			if (GuiButton({ Constants::WindowWidth - 100.f, 30, 100, 30 }, "Export"))
+			{
+				m_FileDialog.windowActive = true;
+				m_FileDialog.saveFileMode = true;
+			}
+
+			GuiUnlock();
+
+		GuiWindowFileDialog(&m_FileDialog);
 
 		DrawFPS(750, 0);
 
@@ -174,5 +217,38 @@ void App::ConductorControll()
 
 		if (Conductor::SongPosition <= -1)
 			Conductor::SetPosition(0);
+	}
+}
+
+void App::ExportFuckingChartGodHelpUsAll()
+{
+	nlohmann::json superCoolData;
+	superCoolData["songName"] = Conductor::GetSongName();
+	superCoolData["bpm"] = Conductor::BPM;
+	superCoolData["scrollSpeed"] = Conductor::SongSpeed;
+	superCoolData["songLenght"] = Conductor::SongMaxLenght;
+	
+	for (auto& chart : m_Charts)
+	{
+		std::list<Note*> notes = chart->GetAllNotes();
+		std::string owner = chart->GetOwner();
+		for (Note* note : notes)
+		{
+			Note::NoteData data = note->GetNoteData();
+			superCoolData["notes"].emplace_back(nlohmann::json::object({
+				{"time", data.notePosition},
+				{"noteID", data.noteID},
+				{"noteTurn", owner}
+			}));
+		}
+	}
+
+	std::string filePath = m_FileDialog.dirPathText + std::string("/") + m_FileDialog.fileNameText;
+	std::ofstream file(filePath + ".json");
+
+	if (file.is_open()) 
+	{
+		file << superCoolData.dump(4);
+		file.close();
 	}
 }

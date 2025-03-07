@@ -12,6 +12,9 @@ public:
 
 	void Update(const Vector2& mousePos);
 	void Draw();
+
+	std::list<Note*> GetAllNotes() const;
+	std::string GetOwner() const;
 private:
 	Vector2 m_pos;
 
