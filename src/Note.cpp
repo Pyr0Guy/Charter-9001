@@ -1,6 +1,7 @@
 #include "pch.hpp"
 #include "include/Note.hpp"
 #include "include/Constants.hpp"
+#include "include/Conductor.hpp"
 #include "include/ResourceManager.hpp"
 
 Note::Note(NoteData& note, Vector2 pos)
@@ -12,6 +13,9 @@ Note::Note(NoteData& note, Vector2 pos)
 
 	m_PrevSustenedLen = 0;
 	m_Active = false;
+	hitProcessed = false;
+	isRendered = false;
+	isDeleted = false;
 }
 
 Note::~Note()
@@ -31,11 +35,11 @@ void Note::Update()
 {
 	m_NoteSprite->Update();
 	
-	if (m_PrevSustenedLen != m_NoteData.sustendedLen)
+	if (m_PrevSustenedLen != m_NoteData.sustendedCellLen)
 	{
 		Vector2 basePos = m_NoteSprite->GetPosition();
 		UpdateSustainSprites(basePos);
-		m_PrevSustenedLen = m_NoteData.sustendedLen;
+		m_PrevSustenedLen = m_NoteData.sustendedCellLen;
 	}
 
 	for (auto& sprite : m_SustendedsSprites) {
@@ -54,7 +58,7 @@ void Note::Draw()
 void Note::SetSustainLength(int length)
 {
 	//length = std::clamp(length, 0, 10);
-	m_NoteData.sustendedLen = length;
+	m_NoteData.sustendedCellLen = length;
 }
 
 
@@ -66,7 +70,7 @@ void Note::UpdateSustainSprites(const Vector2& startPos) {
     m_SustendedsSprites.clear();
 
 
-    for (int i = 0; i < m_NoteData.sustendedLen; i++) {
+    for (int i = 0; i < m_NoteData.sustendedCellLen; i++) {
 		Vector2 pos = {
 			startPos.x + (Constants::GridWidth / 2.f) - 10.f,
 			startPos.y + (i + 1) * Constants::GridHeight - 6.f
@@ -76,7 +80,7 @@ void Note::UpdateSustainSprites(const Vector2& startPos) {
 		m_SustendedsSprites.back()->Play(Constants::arrowsList[m_NoteData.noteID] + "note_long");
 		m_SustendedsSprites.back()->SetOrigin(Origin::TOP_LEFT);
 
-		if (i == m_NoteData.sustendedLen - 1)
+		if (i == m_NoteData.sustendedCellLen - 1)
 		{
 			pos.y += Constants::GridHeight;
 			pos.x -= 9.5f;
@@ -84,7 +88,7 @@ void Note::UpdateSustainSprites(const Vector2& startPos) {
 			m_SustendedsSprites.back()->Play(Constants::arrowsList[m_NoteData.noteID] + "note_long_end");
 			m_SustendedsSprites.back()->SetOrigin(Origin::TOP_LEFT);
 
-			m_NoteData.noteSustendEnd = startPos.y + (i + 1) * Constants::GridHeight - 5.f;
+			m_NoteData.sustendedLen = m_NoteData.sustendedCellLen * Conductor::MSPerCell;
 		}
     }
 }

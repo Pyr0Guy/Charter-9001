@@ -29,8 +29,10 @@ private:
 	float m_ChartStartYPos;
 	std::vector<ChartRegion*> m_Charts;
 	std::vector<std::string> m_ChartNames;
+	std::vector<Note*> m_RendableNotes;
 
 	Sprite* bg;
 
 	//Gui
+	bool m_PlayHitsound;
 };

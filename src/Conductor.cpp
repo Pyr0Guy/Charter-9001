@@ -8,6 +8,7 @@ int Conductor::BPM = 0;
 int Conductor::SongMaxLenght = 0;
 int Conductor::SongPosition = 0;
 int Conductor::SongPosInBeat = 0;
+int Conductor::MSPerCell = 0;
 
 float Conductor::MSPerBeat = 0.f;
 
@@ -39,6 +40,8 @@ void Conductor::Init(int bpm, int TopNum, int BottomNum, const std::string& Song
 	Audio::StartSong(SongPath, m_songName);
 
 	SongMaxLenght = Audio::GetSongLength(m_songName);
+
+	MSPerCell = MSPerBeat / 4.f;
 }
 
 void Conductor::Update()
@@ -46,6 +49,7 @@ void Conductor::Update()
 	if (m_inPause == false)
 	{
 		SongPosition = Audio::GetSongPosition(m_songName);
+		SongPosInBeat = SongPosition / MSPerBeat;
 	}
 }
 
@@ -75,5 +79,15 @@ unsigned int Conductor::GetPosition()
 std::string Conductor::GetSongName()
 {
 	return m_songName;
+}
+
+int Conductor::GetTopNum()
+{
+	return m_TopNumber;
+}
+
+int Conductor::GetBottomNum()
+{
+	return m_BottomNumber;
 }
 

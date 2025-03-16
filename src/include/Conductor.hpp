@@ -15,11 +15,16 @@ public:
 
 	static std::string GetSongName();
 
+	static int GetTopNum();
+	static int GetBottomNum();
+
 	static float SongSpeed;
 
 	static int SongMaxLenght;
 	static int SongPosition;
 	static int SongPosInBeat;
+
+	static int MSPerCell;
 
 	static int BPM;
 

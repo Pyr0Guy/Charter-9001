@@ -174,6 +174,18 @@ bool Audio::isLoaded()
 	return m_PauseVector.empty();
 }
 
+void Audio::LoadSound(const std::string& path, const std::string& name)
+{
+	FMOD::Sound* sound = nullptr;
+	ERRCHECK(fmodSysLow->createSound(path.c_str(), FMOD_DEFAULT, nullptr, &sound));
+	ResourceManager::LoadSound(name, sound);
+}
+
+void Audio::PlayOneshot(const std::string& name)
+{
+	fmodSysLow->playSound(ResourceManager::GetSound(name), nullptr, false, nullptr);
+}
+
 void ERRCHECK_fn(FMOD_RESULT result, const char* file, int line) {
 	if (result != FMOD_OK)
 		std::cout << "FMOD ERROR: Audio.cpp [Line " << line << "] " << result << "  - " << FMOD_ErrorString(result) << '\n';
@@ -321,5 +333,6 @@ std::vector<FMOD::Channel*> Audio::FindSoundChannels(FMOD::ChannelGroup* channel
 		}
 	}
 
+	//std::cout << channelVector.size() << std::endl;
 	return channelVector;
 }

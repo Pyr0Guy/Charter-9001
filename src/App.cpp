@@ -9,7 +9,6 @@
 #define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
 #include "include/raygui/gui_window_file_dialog.h"
 
-#include "include/Cell.hpp"
 #include "include/App.hpp"
 #include "include/Audio.hpp"
 #include "include/Constants.hpp"
@@ -23,6 +22,8 @@
 bool paused = true;
 GuiWindowFileDialogState m_FileDialog;
 
+int CeilCoundOnTheScreen = 12;
+
 App::App(unsigned int Width, unsigned int Height, const std::string& title)
 {
 	InitWindow(Width, Height, title.c_str());
@@ -31,12 +32,16 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_Charts.reserve(2);
 	m_ChartStartYPos = 100.f;
 
+	m_RendableNotes.reserve(20);
+
+	m_PlayHitsound = false;
+
 	Audio::Init();
 
 	m_ChartNames.push_back("oldMan");
 	m_ChartNames.push_back("lad");
 
-	Conductor::Init(96, 4, 4, Constants::SoundPath + "Episode Songs.bank", "e1-s1");
+	Conductor::Init(77, 4, 4, Constants::SoundPath + "Episode Songs.bank", "e1-s1");
 
 	int columFuck = static_cast<int>(std::ceil(Conductor::SongMaxLenght / (Conductor::MSPerBeat / 4.0f)));
 
@@ -57,6 +62,8 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	std::string dir = std::string(GetWorkingDirectory()) + "\\assets";
 	m_FileDialog = InitGuiWindowFileDialog(dir.c_str());
 
+	Audio::LoadSound("assets/sounds/click.wav", "hitsound");
+
 	ResourceManager::LoadTexture2D(Constants::ImagePath + "arrows_basic.png", "arrow");
 	LoadAnimations();
 }
@@ -67,6 +74,33 @@ void App::Update()
 	{
 		Conductor::SetPause(true);
 		paused = true;
+	}
+
+	m_MainCamera.target = { 0.f, m_LinePosition };
+	unsigned int lastTime = Conductor::SongPosition;
+
+	for (auto& chart : m_Charts)
+	{
+		for (auto& note : chart->GetAllNotes())
+		{
+			int NotePos = note->GetNoteData().notePosition;
+			int susNoteEndPos = note->GetNoteData().isSustended ? note->GetNoteData().sustendedLen : 0;
+			
+			int upThing = Conductor::SongPosition - (Conductor::MSPerCell * 3);
+			int downThing = upThing + (Conductor::MSPerCell * CeilCoundOnTheScreen);
+
+			bool isNoteVisible = (NotePos + susNoteEndPos >= upThing) && (NotePos <= downThing);
+
+			if (note->isRendered == false && isNoteVisible == true)
+			{
+				m_RendableNotes.push_back(note);
+				note->isRendered = true;
+			}
+			else if (isNoteVisible == false && note->isRendered == true)
+			{
+				note->isRendered = false;
+			}
+		}
 	}
 
 	Audio::Update();
@@ -107,11 +141,46 @@ void App::Update()
 		ExportFuckingChartGodHelpUsAll();
 
 		m_FileDialog.SelectFilePressed = false;
+		memset(m_FileDialog.fileNameText, 0, 1024);
+		memset(m_FileDialog.fileNameTextCopy, 0, 1024);
+	}
+	
+	if (m_PlayHitsound == true && paused == false)
+	{
+		for (auto& note : m_RendableNotes)
+		{
+			const unsigned int notePos = note->GetNoteData().notePosition;
+
+			if (Conductor::SongPosition > notePos && lastTime <= notePos)
+				Audio::PlayOneshot("hitsound");
+		}
 	}
 
 	float cellDuration = Conductor::MSPerBeat / 4.0f;
 	float cell = Conductor::SongPosition / cellDuration;
 	m_LinePosition = 100.f + (cell * Constants::GridHeight);
+
+	for (size_t i = 0; i < m_RendableNotes.size(); i++)
+	{
+		if (m_RendableNotes[i]->isDeleted == true || m_RendableNotes[i]->isRendered == false)
+			m_RendableNotes.erase(m_RendableNotes.begin() + i);
+	}
+
+	for (auto& chart : m_Charts)
+	{
+		std::vector<Note*>& notes = chart->GetAllNotes();
+		for (int i = 0; i < notes.size(); i++)
+		{
+			if (notes[i]->isDeleted == true)
+			{
+				delete notes[i];
+				notes[i] = nullptr;
+				notes.erase(notes.begin() + i);
+			}
+		}
+	}
+
+	std::cout << m_RendableNotes.size() << " " << m_Charts[0]->GetAllNotes().size() << std::endl;
 }
 
 void App::Draw()
@@ -126,8 +195,11 @@ void App::Draw()
 		{
 			BeginMode2D(m_MainCamera);
 
-				for (auto& chart : m_Charts)
+					for (auto& chart : m_Charts)
 					chart->Draw();
+
+				for (auto& note : m_RendableNotes)
+					note->Draw();
 
 			EndMode2D();
 		}
@@ -145,6 +217,8 @@ void App::Draw()
 				m_FileDialog.windowActive = true;
 				m_FileDialog.saveFileMode = true;
 			}
+
+			GuiCheckBox({ Constants::WindowWidth - 100.f, 300, 20, 20 }, "Hitsond", &m_PlayHitsound);
 
 			GuiUnlock();
 
@@ -195,8 +269,6 @@ void App::ConductorControll()
 			Conductor::SetPause(paused);
 		}
 
-		m_MainCamera.target = { 0.f, m_LinePosition };
-
 		if (IsKeyPressed('Q'))
 			Conductor::SetPosition(Conductor::SongMaxLenght - 2000);
 
@@ -207,7 +279,7 @@ void App::ConductorControll()
 			Conductor::SetPosition(0);
 
 		if (GetMouseWheelMove() != 0)
-			Conductor::SetPosition(Conductor::SongPosition - (int)GetMouseWheelMove() * Constants::MouseWheelMult);
+			Conductor::SetPosition(Conductor::SongPosition - (int)GetMouseWheelMove() * (Constants::MouseWheelMult * 2));
 
 		if (IsKeyDown(KEY_UP))
 			Conductor::SetPosition(Conductor::SongPosition - Constants::MouseWheelMult);
@@ -230,7 +302,7 @@ void App::ExportFuckingChartGodHelpUsAll()
 	
 	for (auto& chart : m_Charts)
 	{
-		std::list<Note*> notes = chart->GetAllNotes();
+		std::vector<Note*> notes = chart->GetAllNotes();
 		std::string owner = chart->GetOwner();
 		for (Note* note : notes)
 		{
@@ -244,11 +316,33 @@ void App::ExportFuckingChartGodHelpUsAll()
 	}
 
 	std::string filePath = m_FileDialog.dirPathText + std::string("/") + m_FileDialog.fileNameText;
-	std::ofstream file(filePath + ".json");
-
-	if (file.is_open()) 
+	
+	char* stringPos = strstr(m_FileDialog.fileNameText, ".json");
+	if (stringPos)
 	{
-		file << superCoolData.dump(4);
-		file.close();
+		size_t fileNameLen = strlen(m_FileDialog.fileNameText);
+		size_t fileExtensionLen = strlen(".json");
+
+		memmove(stringPos, stringPos + fileNameLen, fileNameLen - (stringPos - m_FileDialog.fileNameText) - fileExtensionLen + 1);
+	}
+
+	filePath += ".json";
+
+	/*
+	std::ifstream fileRead(filePath);
+
+	if (fileRead.good()) //File Already exsists so i need to warn user, meh someday later - 14.03.25
+	{
+
+	}
+
+	fileRead.close();
+	*/
+
+	std::ofstream fileWrite(filePath);
+	if (fileWrite.is_open())
+	{
+		fileWrite << superCoolData.dump(4);
+		fileWrite.close();
 	}
 }

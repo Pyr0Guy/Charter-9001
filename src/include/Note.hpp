@@ -9,8 +9,8 @@ public:
 	{
 		unsigned int notePosition;
 		bool isSustended;
+		int sustendedCellLen;
 		int sustendedLen;
-		int noteSustendEnd;
 		int noteID;
 	};
 
@@ -31,6 +31,10 @@ public:
 	bool isMouseOverEndSus(const Vector2& startPos);
 
 	std::vector<Sprite*> m_SustendedsSprites;
+
+	bool hitProcessed;
+	bool isRendered;
+	bool isDeleted;
 private:
 	NoteData m_NoteData;
 	Sprite* m_NoteSprite;

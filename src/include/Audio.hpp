@@ -27,6 +27,9 @@ public:
 
 	static bool isLoaded();
 
+	static void LoadSound(const std::string& path, const std::string& name);
+	static void PlayOneshot(const std::string& name);
+
 private:
 	static bool m_masterBankLoaded;
 

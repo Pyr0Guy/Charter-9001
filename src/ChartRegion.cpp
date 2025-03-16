@@ -7,14 +7,41 @@ ChartRegion::ChartRegion(const Vector2& pos, const std::string& regionOwner, uns
 	: m_whichRegion(regionOwner), m_ColumNum(howManyColums), m_pos(pos)
 {
 	m_allCell.reserve(howManyColums);
+	m_AllNotes.reserve(40);
 
+	int bottomNumCount = 0;
 	for (int j = 0; j < Constants::MaxRows; j++)
 	{
-		for (size_t i = 0; i < howManyColums; i++)
+		for (int i = 0; i < howManyColums; i++)
 		{
 			Color c = (i + j) % 2 == 0 ? BLACK : GRAY;
 
 			m_allCell.emplace_back(new Cell(m_pos.x + (j * Constants::GridWidth), m_pos.y + (i * Constants::GridHeight), j, i, c));
+
+			//This is stupid - 14.03.2025
+			if(j == 0)
+			{
+				if (i % (Conductor::GetTopNum() * 2) == 0)
+				{
+					bottomNumCount++;
+
+					Line line;
+					line.points.x = pos.x;
+					line.points.y = pos.y + (i * Constants::GridHeight);
+					line.points.width = pos.x + (Constants::MaxRows * Constants::GridWidth);
+					line.points.height = pos.y + (i * Constants::GridHeight);
+
+					if (bottomNumCount == Conductor::GetBottomNum())
+					{
+						line.c = RED;
+						bottomNumCount = 0;
+					}
+					else
+						line.c = WHITE;
+
+					m_LinesVector.push_back(line);
+				}
+			}
 		}
 	}
 
@@ -76,8 +103,11 @@ void ChartRegion::Draw()
 	for (auto& cell : m_allCell)
 		cell->Draw();
 
-	for (auto& note : m_AllNotes)
-		note->Draw();
+	//for (auto& note : m_AllNotes)
+	//	note->Draw();
+
+	for (auto& line : m_LinesVector)
+		DrawLineEx({ line.points.x, line.points.y }, { line.points.width, line.points.height }, 2, line.c);
 }
 
 std::string ChartRegion::GetOwner() const
@@ -85,7 +115,7 @@ std::string ChartRegion::GetOwner() const
 	return m_whichRegion;
 }
 
-std::list<Note*> ChartRegion::GetAllNotes() const
+std::vector<Note*>& ChartRegion::GetAllNotes()
 {
 	return m_AllNotes;
 }
@@ -169,16 +199,21 @@ void ChartRegion::NoteHandling(const Vector2& mousePos)
 			}
 			else
 			{
+				/*
 				auto it = std::find(m_AllNotes.begin(), m_AllNotes.end(), m_CurCell->m_NoteRef);
-
 				m_CurCell->m_NoteRef = nullptr;
 				m_CurCell->m_WithArrow = false;
+				//m_CurCell->m_NoteRef->isDeleted = true;
 
 				if (it != m_AllNotes.end())
 				{
 					delete* it;
 					m_AllNotes.erase(it);
 				}
+				*/
+
+				m_CurCell->m_WithArrow = false;
+				m_CurCell->m_NoteRef->isDeleted = true;
 			}
 		}
 	}
