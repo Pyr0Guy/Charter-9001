@@ -21,7 +21,7 @@ public:
 	static int GetTopNum();
 	static int GetBottomNum();
 
-	static float SongSpeed;
+	static float ScrollSpeed;
 
 	static int SongMaxLenght;
 	static int SongPosition;

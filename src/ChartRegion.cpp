@@ -130,8 +130,6 @@ std::vector<Note*>& ChartRegion::GetAllNotes()
 
 void ChartRegion::NoteHandling(const Vector2& mousePos)
 {
-	float deltaY = mousePos.y - m_DragStartPos.y;
-
 	if (m_CurCell != nullptr)
 	{
 		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
@@ -143,7 +141,7 @@ void ChartRegion::NoteHandling(const Vector2& mousePos)
 					m_DragableNote = note;
 					m_DragEndNote = true;
 					m_isDraging = true;
-					m_DragStartPos = mousePos;
+					m_DragStartPos = { 0, note->GetPosition().y + Constants::GridHeight };
 					break;
 				}
 			}
@@ -161,12 +159,7 @@ void ChartRegion::NoteHandling(const Vector2& mousePos)
 		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && m_isDraging == true)
 		{
 			Vector2 currentMousePos = mousePos;
-			float deltaY;
-
-			if (m_DragEndNote == false)
-				deltaY = currentMousePos.y - m_DragStartPos.y;
-			else
-				deltaY = currentMousePos.y - (Constants::GridHeight * 2); //This is buggy idk how to fix this
+			float deltaY = currentMousePos.y - m_DragStartPos.y;
 
 			int cells = static_cast<int>(deltaY / Constants::GridHeight);
 

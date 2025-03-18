@@ -12,7 +12,7 @@ int Conductor::MSPerCell = 0;
 
 float Conductor::MSPerBeat = 0.f;
 
-float Conductor::SongSpeed = 1.f;
+float Conductor::ScrollSpeed = 1.f;
 
 std::string Conductor::m_songName = "";
 std::string Conductor::m_SongPath = "";

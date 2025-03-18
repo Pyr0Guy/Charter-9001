@@ -27,6 +27,7 @@ public:
 	void SetSutended(bool sus);
 
 	NoteData GetNoteData();
+	Vector2 GetPosition();
 
 	bool isMouseOverEndSus(const Vector2& startPos);
 

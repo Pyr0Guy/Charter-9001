@@ -116,22 +116,27 @@ unsigned int Audio::GetSongLength(const std::string& songName)
 
 void Audio::SetPosition(const std::string& songName, unsigned int Position)
 {
-	if (auto* sound = ResourceManager::GetChannel(songName))
-		ERRCHECK(sound->setPosition(Position, FMOD_TIMEUNIT_MS));
-	else if (auto* instance = ResourceManager::GetEventInstance(songName))
+	if (Position > 0 && Position < Audio::GetSongLength(songName))
 	{
-		//ERRCHECK(instance->setTimelinePosition(static_cast<int>(Position)));
-		FMOD::ChannelGroup* cg = nullptr;
-		ERRCHECK(instance->getChannelGroup(&cg));
+		if (auto* sound = ResourceManager::GetChannel(songName))
+		{
+			ERRCHECK(sound->setPosition(Position, FMOD_TIMEUNIT_MS));
+		}
+		else if (auto* instance = ResourceManager::GetEventInstance(songName))
+		{
+			//ERRCHECK(instance->setTimelinePosition(static_cast<int>(Position)));
+			FMOD::ChannelGroup* cg = nullptr;
+			ERRCHECK(instance->getChannelGroup(&cg));
 
-		std::vector<FMOD::Channel*> chans = FindSoundChannels(cg);
-		
-		for (auto chan : chans)
-			chan->setPosition(Position, FMOD_TIMEUNIT_MS);
+			std::vector<FMOD::Channel*> chans = FindSoundChannels(cg);
 
+			for (auto chan : chans)
+				chan->setPosition(Position, FMOD_TIMEUNIT_MS);
+
+		}
+		else
+			std::cout << "There is no: " << songName << std::endl;
 	}
-	else
-		std::cout << "There is no: " << songName << std::endl;
 }
 
 void Audio::Update()

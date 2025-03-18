@@ -19,6 +19,7 @@ private:
 	void LoadChart(const std::string& path);
 
 	void ResetTextbox();
+	void ResetFileDialog();
 public:
 	App(unsigned int Width, unsigned int Height, const std::string& title);
 
@@ -45,16 +46,23 @@ private:
 
 	Sprite* bg;
 
+	//GUI
 	char m_eventName[128];
 	bool m_eventBool;
 
 	char m_filePathSong[1024];
 	bool m_fileBool;
 
+	bool m_bankFileContains;
+
 	char m_bpmText[10];
 	bool m_bpmBool;
 
+	char m_scrollSpeed[4];
+	bool m_scrollSpeedBool;
+
 	bool m_isThreeFour;
+	bool m_inTextbox;
 
 	bool m_PlayHitsound;
 };

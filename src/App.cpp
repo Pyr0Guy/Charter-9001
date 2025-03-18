@@ -38,6 +38,8 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	
 	bg = nullptr;
 	m_LinePosition = m_ChartStartYPos;
+	m_bankFileContains = false;
+	m_inTextbox = false;
 
 	m_MainCamera.target = { 0.f, m_LinePosition };
 	m_MainCamera.rotation = 0.f;
@@ -47,6 +49,11 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	std::memset(m_eventName, 0, sizeof(m_eventName));
 	std::memset(m_filePathSong, 0, sizeof(m_filePathSong));
 	std::memset(m_bpmText, 0, sizeof(m_bpmText));
+	std::memset(m_scrollSpeed, 0, sizeof(m_scrollSpeed));
+
+	m_scrollSpeed[0] = '1';
+	m_scrollSpeed[1] = '.';
+	m_scrollSpeed[2] = '0';
 
 	m_isThreeFour = false;
 	m_FDstate = FileDialogeState::SaveExportedFiles;
@@ -98,12 +105,21 @@ void App::Update()
 		}
 	}
 
+	if (m_fileBool == true)
+	{
+		const char* result = strstr(m_filePathSong, ".bank");
+		if (result != nullptr)
+			m_bankFileContains = true;
+		else
+			m_bankFileContains = false;
+	}
+
 	Audio::Update();
 	Conductor::Update();
 
 	m_WorldMousePos = GetScreenToWorld2D(GetMousePosition(), m_MainCamera);
 
-	if (m_FileDialog.windowActive == false)
+	if (m_FileDialog.windowActive == false && m_inTextbox == false)
 	{
 		for (auto& chart : m_Charts)
 			chart->Update(m_WorldMousePos);
@@ -132,24 +148,10 @@ void App::Update()
 
 	//Export Chart
 	if (m_FileDialog.SelectFilePressed && m_FDstate == FileDialogeState::SaveExportedFiles)
-	{
 		ExportFuckingChartGodHelpUsAll();
 
-		m_FileDialog.SelectFilePressed = false;
-		m_FileDialog.saveFileMode = false;
-		memset(m_FileDialog.fileNameText, 0, 1024);
-		memset(m_FileDialog.fileNameTextCopy, 0, 1024);
-	}
-
 	if (m_FileDialog.SelectFilePressed == true && m_FDstate == FileDialogeState::SelectAndLoadJson)
-	{
-		//std::cout << m_FileDialog.dirPathText << "\\" << m_FileDialog.fileNameText << std::endl;
 		LoadChart(std::string(m_FileDialog.dirPathText) + "\\" + std::string(m_FileDialog.fileNameText));
-
-		m_FileDialog.SelectFilePressed = false;
-		memset(m_FileDialog.fileNameText, 0, 1024);
-		memset(m_FileDialog.fileNameTextCopy, 0, 1024);
-	}
 	
 	if (m_PlayHitsound == true && paused == false)
 	{
@@ -233,25 +235,41 @@ void App::Draw()
 
 			GuiCheckBox({ Constants::WindowWidth - 100.f, 300, 20, 20 }, "Hitsond", &m_PlayHitsound);
 
+			//I need to refactor this so fucking much - Pyr0 03.18.25
 			GuiDrawText("File Path", { Constants::WindowWidth - 100.f, 55, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
-			if (GuiTextBox({ Constants::WindowWidth - 100.f, 75, 100, 30 }, m_filePathSong, 1024, m_fileBool))
+
+			if(GuiTextBox({ Constants::WindowWidth - 100.f, 75, 100, 30 }, m_filePathSong, 1024, m_fileBool))
 			{
-				ResetTextbox();
-				m_fileBool = true;
+				m_inTextbox = !m_inTextbox;
+				m_fileBool = !m_fileBool;
 			}
 
-			GuiDrawText("Event Path", { Constants::WindowWidth - 100.f, 100, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
-			if(GuiTextBox({ Constants::WindowWidth - 100.f, 120, 100, 30 }, m_eventName, 128, m_eventBool))
+			if (m_bankFileContains == true)
 			{
-				ResetTextbox();
-				m_eventBool = true;
+				GuiDrawText("Event Path", { Constants::WindowWidth - 100.f, 100, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
+
+				if(GuiTextBox({ Constants::WindowWidth - 100.f, 120, 100, 30 }, m_eventName, 128, m_eventBool))
+				{
+					m_inTextbox = !m_inTextbox;
+					m_eventBool = !m_eventBool;
+				}
 			}
 
 			GuiDrawText("BPM", { Constants::WindowWidth - 100.f, 150, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
+
 			if (GuiTextBox({ Constants::WindowWidth - 100.f, 170, 100, 30 }, m_bpmText, 10, m_bpmBool))
 			{
-				ResetTextbox();
-				m_bpmBool = true;
+				m_inTextbox = !m_inTextbox;
+				m_bpmBool = !m_bpmBool;
+			}
+
+			GuiDrawText("Scroll Speed", { Constants::WindowWidth - 100.f, 210, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
+			if (GuiTextBox({ Constants::WindowWidth - 100.f, 230, 100, 30 }, m_scrollSpeed, 10, m_scrollSpeedBool))
+			{
+				m_inTextbox = !m_inTextbox;
+				m_scrollSpeedBool = !m_scrollSpeedBool;
+
+				Conductor::ScrollSpeed = atof(m_scrollSpeed);
 			}
 
 			GuiCheckBox({ Constants::WindowWidth - 100.f, 350, 20, 20 }, "Is 3/4?", &m_isThreeFour);
@@ -347,7 +365,7 @@ void App::ExportFuckingChartGodHelpUsAll()
 	superCoolData["isBank"] = Conductor::IsBank();
 	superCoolData["songName"] = Conductor::GetSongName();
 	superCoolData["bpm"] = Conductor::BPM;
-	superCoolData["scrollSpeed"] = Conductor::SongSpeed;
+	superCoolData["scrollSpeed"] = Conductor::ScrollSpeed;
 	superCoolData["songLenght"] = Conductor::SongMaxLenght;
 	superCoolData["is3/4"] = Conductor::GetTopNum() == 3 ? true : false;
 	
@@ -380,8 +398,6 @@ void App::ExportFuckingChartGodHelpUsAll()
 			}
 		}
 	}
-
-	std::string filePath = m_FileDialog.dirPathText + std::string("/") + m_FileDialog.fileNameText;
 	
 	char* stringPos = strstr(m_FileDialog.fileNameText, ".json");
 	if (stringPos)
@@ -392,6 +408,7 @@ void App::ExportFuckingChartGodHelpUsAll()
 		memmove(stringPos, stringPos + fileNameLen, fileNameLen - (stringPos - m_FileDialog.fileNameText) - fileExtensionLen + 1);
 	}
 
+	std::string filePath = m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText;
 	filePath += ".json";
 
 	/*
@@ -411,6 +428,8 @@ void App::ExportFuckingChartGodHelpUsAll()
 		fileWrite << superCoolData.dump(4);
 		fileWrite.close();
 	}
+
+	ResetFileDialog();
 }
 
 void App::RestartSong(int BPM, Vector2 Signature, const std::string& songPath, const std::string& eventName = "")
@@ -501,6 +520,8 @@ void App::LoadChart(const std::string& path)
 				chart->AddNote(data, noteTurn);
 		}
 	}
+
+	ResetFileDialog();
 }
 
 void App::ResetTextbox()
@@ -508,4 +529,13 @@ void App::ResetTextbox()
 	m_bpmBool = false;
 	m_eventBool = false;
 	m_fileBool = false;
+	m_scrollSpeedBool = false;
+}
+
+void App::ResetFileDialog()
+{
+	m_FileDialog.SelectFilePressed = false;
+	m_FileDialog.saveFileMode = false;
+	memset(m_FileDialog.fileNameText, 0, 1024);
+	memset(m_FileDialog.fileNameTextCopy, 0, 1024);
 }

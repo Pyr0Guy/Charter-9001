@@ -105,6 +105,11 @@ Note::NoteData Note::GetNoteData()
 	return m_NoteData;
 }
 
+Vector2 Note::GetPosition()
+{
+	return m_NoteSprite->GetPosition();
+}
+
 bool Note::isMouseOverEndSus(const Vector2& mousePos)
 {
 	if (m_SustendedsSprites.empty()) return false;
