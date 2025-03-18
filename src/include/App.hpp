@@ -14,6 +14,7 @@ private:
 	void LoadAnimations();
 	void ConductorControll();
 	void ExportFuckingChartGodHelpUsAll();
+	bool CheckIfFileExsist();
 
 	void RestartSong(int BPM, Vector2 Signature, const std::string& songPath, const std::string& eventName);
 	void LoadChart(const std::string& path);
@@ -63,6 +64,8 @@ private:
 
 	bool m_isThreeFour;
 	bool m_inTextbox;
+
+	bool m_ShowFileAllreadyExsistsWindow;
 
 	bool m_PlayHitsound;
 };

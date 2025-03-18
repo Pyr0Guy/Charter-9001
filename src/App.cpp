@@ -148,7 +148,12 @@ void App::Update()
 
 	//Export Chart
 	if (m_FileDialog.SelectFilePressed && m_FDstate == FileDialogeState::SaveExportedFiles)
-		ExportFuckingChartGodHelpUsAll();
+	{
+		if (CheckIfFileExsist() == true)
+			m_ShowFileAllreadyExsistsWindow = true;
+		else
+			ExportFuckingChartGodHelpUsAll();
+	}
 
 	if (m_FileDialog.SelectFilePressed == true && m_FDstate == FileDialogeState::SelectAndLoadJson)
 		LoadChart(std::string(m_FileDialog.dirPathText) + "\\" + std::string(m_FileDialog.fileNameText));
@@ -284,6 +289,23 @@ void App::Draw()
 
 		GuiWindowFileDialog(&m_FileDialog);
 
+		if (m_ShowFileAllreadyExsistsWindow == true)
+		{
+			int res = GuiMessageBox({ static_cast<float>(Constants::WindowWidth / 2) - 200, static_cast<float>(Constants::WindowHeight / 2) - 200, 400, 400 },"Hold up!","Hey File Already Exsists\nDo you want to re-write it?", "No Fuck you;Yes Fuck you");
+
+			if (res == 1 || res == 0)
+			{
+				std::cout << "FFAA" << std::endl;
+				m_ShowFileAllreadyExsistsWindow = false;
+				ResetFileDialog();
+			}
+			else if(res == 2)
+			{
+				m_ShowFileAllreadyExsistsWindow = false;
+				ExportFuckingChartGodHelpUsAll();
+			}
+		}
+
 		DrawFPS(750, 0);
 
 	EndDrawing();
@@ -411,17 +433,6 @@ void App::ExportFuckingChartGodHelpUsAll()
 	std::string filePath = m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText;
 	filePath += ".json";
 
-	/*
-	std::ifstream fileRead(filePath);
-
-	if (fileRead.good()) //File Already exsists so i need to warn user, meh someday later - 14.03.25
-	{
-
-	}
-
-	fileRead.close();
-	*/
-
 	std::ofstream fileWrite(filePath);
 	if (fileWrite.is_open())
 	{
@@ -430,6 +441,31 @@ void App::ExportFuckingChartGodHelpUsAll()
 	}
 
 	ResetFileDialog();
+}
+
+bool App::CheckIfFileExsist()
+{
+	char* stringPos = strstr(m_FileDialog.fileNameText, ".json");
+	if (stringPos)
+	{
+		size_t fileNameLen = strlen(m_FileDialog.fileNameText);
+		size_t fileExtensionLen = strlen(".json");
+
+		memmove(stringPos, stringPos + fileNameLen, fileNameLen - (stringPos - m_FileDialog.fileNameText) - fileExtensionLen + 1);
+	}
+
+	std::string filePath = m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText;
+	filePath += ".json";
+
+	std::ifstream fileRead(filePath);
+
+	if (fileRead.good()) //File Already exsists so i need to warn user, meh someday later - 14.03.25
+	{
+		fileRead.close();
+		return true;
+	}
+
+	return false;
 }
 
 void App::RestartSong(int BPM, Vector2 Signature, const std::string& songPath, const std::string& eventName = "")
