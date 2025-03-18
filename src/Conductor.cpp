@@ -15,14 +15,17 @@ float Conductor::MSPerBeat = 0.f;
 float Conductor::SongSpeed = 1.f;
 
 std::string Conductor::m_songName = "";
+std::string Conductor::m_SongPath = "";
 
 bool Conductor::m_inPause = false;
+bool Conductor::m_isBank = false;
 
 void Conductor::Init(int bpm, int TopNum, int BottomNum, const std::string& SongPath, const std::string& evetName)
 {
 	BPM = bpm;
 	m_TopNumber = TopNum;
 	m_BottomNumber = BottomNum;
+	m_isBank = true;
 
 	if (evetName == "")
 	{
@@ -30,9 +33,12 @@ void Conductor::Init(int bpm, int TopNum, int BottomNum, const std::string& Song
 		std::string name = SongPath.substr(startName + 1, SongPath.find_last_of('.') - startName - 1);
 		std::cout << name << std::endl;
 		m_songName = name;
+		m_isBank = false;
 	}
 	else
 		m_songName = evetName;
+
+	m_SongPath = SongPath;
 
 	MSPerBeat = 60000.f / BPM;
 
@@ -64,6 +70,11 @@ bool Conductor::GetPause()
 	return m_inPause;
 }
 
+bool Conductor::IsBank()
+{
+	return m_isBank;
+}
+
 void Conductor::SetPosition(unsigned int Position)
 {
 	m_inPause = true;
@@ -76,9 +87,14 @@ unsigned int Conductor::GetPosition()
 	return Audio::GetSongPosition(m_songName);
 }
 
-std::string Conductor::GetSongName()
+const std::string& Conductor::GetSongName()
 {
 	return m_songName;
+}
+
+const std::string& Conductor::GetSongPath()
+{
+	return m_SongPath;
 }
 
 int Conductor::GetTopNum()

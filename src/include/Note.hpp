@@ -15,7 +15,7 @@ public:
 	};
 
 public:
-	Note(NoteData& note, Vector2 pos);
+	Note(const NoteData& note, Vector2 pos);
 	~Note();
 
 	void Update();
@@ -31,6 +31,7 @@ public:
 	bool isMouseOverEndSus(const Vector2& startPos);
 
 	std::vector<Sprite*> m_SustendedsSprites;
+	std::string owner;
 
 	bool hitProcessed;
 	bool isRendered;

@@ -23,7 +23,7 @@ public:
 	std::vector<Note*>& GetAllNotes();
 	std::string GetOwner() const;
 
-	
+	void AddNote(const Note::NoteData& noteData, const std::string& owner);
 private:
 	Vector2 m_pos;
 

@@ -18,6 +18,8 @@ public:
 	static const std::string title;
 	static const std::string SoundPath;
 	static const std::string ImagePath;
+	static const std::string MusicPath;
+	static const std::string ChartPath;
 
 	static std::array<std::string, 4> arrowsList;
 };									   

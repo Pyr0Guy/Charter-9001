@@ -5,7 +5,7 @@
 class Cell
 {
 public:
-	Cell(int x, int y, int ID, int colum, Color c);
+	Cell(int x, int y, int ID, int colum, int CellMS, Color c);
 
 	void Draw();
 	void Update(const Vector2& mousePos);
@@ -15,6 +15,8 @@ public:
 	int ReturnID() const;
 	bool GetActive() const;
 	Vector2 GetPosition() const;
+	int GetCellMS() const;
+	int GetID() const;
 
 	Vector2 GetNextCellPosition(int direction) const;
 
@@ -28,4 +30,5 @@ private:
 	bool m_Active;
 
 	int m_ID;
+	int m_CellMS;
 };

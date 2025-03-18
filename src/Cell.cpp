@@ -2,8 +2,8 @@
 #include "include/Cell.hpp"
 #include "include/Constants.hpp"
 
-Cell::Cell(int x, int y, int ID, int colum, Color c)
-	: m_x(x), m_y(y), m_Color(c), m_ID(ID), cellColum(colum)
+Cell::Cell(int x, int y, int ID, int colum, int CellMS, Color c)
+	: m_x(x), m_y(y), m_Color(c), m_ID(ID), cellColum(colum), m_CellMS(CellMS)
 {
 	m_Active = false;
 	m_WithArrow = false;
@@ -57,6 +57,16 @@ Vector2 Cell::GetPosition() const
 {
 	Vector2 pos = { m_x, m_y };
 	return pos;
+}
+
+int Cell::GetCellMS() const
+{
+	return m_CellMS;
+}
+
+int Cell::GetID() const
+{
+	return m_ID;
 }
 
 Vector2 Cell::GetNextCellPosition(int direction) const {

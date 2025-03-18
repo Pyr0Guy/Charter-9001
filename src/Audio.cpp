@@ -202,18 +202,12 @@ void Audio::LoadSongHighLevel(const std::string& path, const std::string& eventN
 {
 	if (m_masterBankLoaded == false)
 	{
-		ERRCHECK(fmodSys->loadBankFile((Constants::SoundPath + "Master.bank").c_str(), FMOD_STUDIO_LOAD_BANK_NORMAL, &masterBank));
-		ERRCHECK(fmodSys->loadBankFile((Constants::SoundPath + "Master.strings.bank").c_str(), FMOD_STUDIO_LOAD_BANK_NORMAL, &masterBank));
+		ERRCHECK(fmodSys->loadBankFile((Constants::MusicPath + "Master.bank").c_str(), FMOD_STUDIO_LOAD_BANK_NORMAL, &masterBank));
+		ERRCHECK(fmodSys->loadBankFile((Constants::MusicPath + "Master.strings.bank").c_str(), FMOD_STUDIO_LOAD_BANK_NORMAL, &masterBank));
 		m_masterBankLoaded = true;
 	}
 
 	ERRCHECK(fmodSys->loadBankFile(path.c_str(), FMOD_STUDIO_LOAD_BANK_NORMAL, &masterBank));
-
-	FMOD_STUDIO_LOADING_STATE state = FMOD_STUDIO_LOADING_STATE_LOADING;
-	while (state != FMOD_STUDIO_LOADING_STATE_LOADED)
-	{
-		masterBank->getLoadingState(&state);
-	}
 
 	//StudioSongData lol;
 	//ResourceManager::LoadStudioSongData(eventName, &lol);

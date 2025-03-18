@@ -9,35 +9,25 @@ ChartRegion::ChartRegion(const Vector2& pos, const std::string& regionOwner, uns
 	m_allCell.reserve(howManyColums);
 	m_AllNotes.reserve(40);
 
-	int bottomNumCount = 0;
 	for (int j = 0; j < Constants::MaxRows; j++)
 	{
 		for (int i = 0; i < howManyColums; i++)
 		{
 			Color c = (i + j) % 2 == 0 ? BLACK : GRAY;
-
-			m_allCell.emplace_back(new Cell(m_pos.x + (j * Constants::GridWidth), m_pos.y + (i * Constants::GridHeight), j, i, c));
+			m_allCell.emplace_back(new Cell(m_pos.x + (j * Constants::GridWidth), m_pos.y + (i * Constants::GridHeight), j, i, i * Conductor::MSPerCell, c));
 
 			//This is stupid - 14.03.2025
 			if(j == 0)
 			{
-				if (i % (Conductor::GetTopNum() * 2) == 0)
+				if (i % (Conductor::GetTopNum()) == 0)
 				{
-					bottomNumCount++;
-
 					Line line;
 					line.points.x = pos.x;
 					line.points.y = pos.y + (i * Constants::GridHeight);
 					line.points.width = pos.x + (Constants::MaxRows * Constants::GridWidth);
 					line.points.height = pos.y + (i * Constants::GridHeight);
 
-					if (bottomNumCount == Conductor::GetBottomNum())
-					{
-						line.c = RED;
-						bottomNumCount = 0;
-					}
-					else
-						line.c = WHITE;
+					line.c = WHITE;
 
 					m_LinesVector.push_back(line);
 				}
@@ -115,6 +105,24 @@ std::string ChartRegion::GetOwner() const
 	return m_whichRegion;
 }
 
+void ChartRegion::AddNote(const Note::NoteData& noteData, const std::string& owner)
+{
+	for (auto& cell : m_allCell) //I think this is shit
+	{
+		if (cell->GetCellMS() == noteData.notePosition && cell->GetID() == noteData.noteID)
+		{
+			m_CurCell = cell;
+			break;
+		}
+	}
+
+	m_AllNotes.push_back(new Note(noteData, m_CurCell->GetPosition()));
+	m_AllNotes.back()->Update();
+	m_AllNotes.back()->owner = owner;
+	m_CurCell->m_NoteRef = m_AllNotes.back();
+	m_CurCell->m_WithArrow = true;
+}
+
 std::vector<Note*>& ChartRegion::GetAllNotes()
 {
 	return m_AllNotes;
@@ -188,14 +196,17 @@ void ChartRegion::NoteHandling(const Vector2& mousePos)
 				Note::NoteData lol = {};
 				lol.noteID = m_CurCell->ReturnID();
 				lol.isSustended = false;
-				lol.notePosition = m_CurCell->cellColum * (Conductor::MSPerBeat / 4);
+				lol.notePosition = m_CurCell->GetCellMS();
 				lol.sustendedLen = 0;
 
+				/*
 				m_AllNotes.emplace_back(new Note(lol, m_CurCell->GetPosition()));
 				m_AllNotes.back()->Update();
 
 				m_CurCell->m_NoteRef = m_AllNotes.back();
 				m_CurCell->m_WithArrow = true;
+				*/
+				AddNote(lol, m_whichRegion);
 			}
 			else
 			{

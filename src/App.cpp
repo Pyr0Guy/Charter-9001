@@ -30,27 +30,12 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	SetTargetFPS(60);
 
 	m_Charts.reserve(2);
-	m_ChartStartYPos = 100.f;
-
 	m_RendableNotes.reserve(20);
 
+	m_ChartStartYPos = 100.f;
+
 	m_PlayHitsound = false;
-
-	Audio::Init();
-
-	m_ChartNames.push_back("oldMan");
-	m_ChartNames.push_back("lad");
-
-	Conductor::Init(77, 4, 4, Constants::SoundPath + "Episode Songs.bank", "e1-s1");
-
-	int columFuck = static_cast<int>(std::ceil(Conductor::SongMaxLenght / (Conductor::MSPerBeat / 4.0f)));
-
-	for (size_t i = 0; i < m_ChartNames.size(); i++)
-	{
-		Vector2 pos = { 100 + (i * (Constants::GridWidth * Constants::MaxRows + 50)), m_ChartStartYPos };
-		m_Charts.emplace_back(new ChartRegion(pos, m_ChartNames[i], columFuck));
-	}
-
+	
 	bg = nullptr;
 	m_LinePosition = m_ChartStartYPos;
 
@@ -59,13 +44,23 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_MainCamera.zoom = 1.f;
 	m_MainCamera.offset = { 0.f , 100.f };
 
-	std::string dir = std::string(GetWorkingDirectory()) + "\\assets";
+	std::memset(m_eventName, 0, sizeof(m_eventName));
+	std::memset(m_filePathSong, 0, sizeof(m_filePathSong));
+	std::memset(m_bpmText, 0, sizeof(m_bpmText));
+
+	m_isThreeFour = false;
+	m_FDstate = FileDialogeState::SaveExportedFiles;
+
+	std::string dir = std::string(GetWorkingDirectory()) + "\\assets\\chart";//Constants::ChartPath;
 	m_FileDialog = InitGuiWindowFileDialog(dir.c_str());
 
-	Audio::LoadSound("assets/sounds/click.wav", "hitsound");
+	Audio::Init();
+	Audio::LoadSound(Constants::SoundPath + "click.wav", "hitsound");
 
 	ResourceManager::LoadTexture2D(Constants::ImagePath + "arrows_basic.png", "arrow");
 	LoadAnimations();
+
+	RestartSong(114, { 3, 4 }, Constants::MusicPath + "Episode Songs.bank", "e0-s1");
 }
 
 void App::Update()
@@ -91,12 +86,12 @@ void App::Update()
 
 			bool isNoteVisible = (NotePos + susNoteEndPos >= upThing) && (NotePos <= downThing);
 
-			if (note->isRendered == false && isNoteVisible == true)
+			if (isNoteVisible == true && note->isRendered == false)
 			{
 				m_RendableNotes.push_back(note);
 				note->isRendered = true;
 			}
-			else if (isNoteVisible == false && note->isRendered == true)
+			else if (isNoteVisible == false)
 			{
 				note->isRendered = false;
 			}
@@ -136,9 +131,20 @@ void App::Update()
 	}
 
 	//Export Chart
-	if (m_FileDialog.SelectFilePressed)
+	if (m_FileDialog.SelectFilePressed && m_FDstate == FileDialogeState::SaveExportedFiles)
 	{
 		ExportFuckingChartGodHelpUsAll();
+
+		m_FileDialog.SelectFilePressed = false;
+		m_FileDialog.saveFileMode = false;
+		memset(m_FileDialog.fileNameText, 0, 1024);
+		memset(m_FileDialog.fileNameTextCopy, 0, 1024);
+	}
+
+	if (m_FileDialog.SelectFilePressed == true && m_FDstate == FileDialogeState::SelectAndLoadJson)
+	{
+		//std::cout << m_FileDialog.dirPathText << "\\" << m_FileDialog.fileNameText << std::endl;
+		LoadChart(std::string(m_FileDialog.dirPathText) + "\\" + std::string(m_FileDialog.fileNameText));
 
 		m_FileDialog.SelectFilePressed = false;
 		memset(m_FileDialog.fileNameText, 0, 1024);
@@ -179,8 +185,6 @@ void App::Update()
 			}
 		}
 	}
-
-	std::cout << m_RendableNotes.size() << " " << m_Charts[0]->GetAllNotes().size() << std::endl;
 }
 
 void App::Draw()
@@ -195,7 +199,7 @@ void App::Draw()
 		{
 			BeginMode2D(m_MainCamera);
 
-					for (auto& chart : m_Charts)
+				for (auto& chart : m_Charts)
 					chart->Draw();
 
 				for (auto& note : m_RendableNotes)
@@ -209,16 +213,54 @@ void App::Draw()
 		DrawLineEx({ 100, 100 }, { 662, 100 }, 2, RED);
 		DrawText(Pos.c_str(), 0, 0, 24, ORANGE);
 
-		if (m_FileDialog.windowActive) 
+		if (m_FileDialog.windowActive)
 			GuiLock();
 
-			if (GuiButton({ Constants::WindowWidth - 100.f, 30, 100, 30 }, "Export"))
+			if (GuiButton({ Constants::WindowWidth - 100.f, 440, 100, 30 }, "Export Chart"))
 			{
 				m_FileDialog.windowActive = true;
 				m_FileDialog.saveFileMode = true;
+				m_FDstate = FileDialogeState::SaveExportedFiles;
+			}
+
+			if (GuiButton({ Constants::WindowWidth - 100.f, 480, 100, 30 }, "Load Chart"))
+			{
+				m_FileDialog.windowActive = true;
+				m_FileDialog.saveFileMode = false;
+				m_FDstate = FileDialogeState::SelectAndLoadJson;
+				//LoadChart(Constants::ChartPath + std::string(m_filePathChart));
 			}
 
 			GuiCheckBox({ Constants::WindowWidth - 100.f, 300, 20, 20 }, "Hitsond", &m_PlayHitsound);
+
+			GuiDrawText("File Path", { Constants::WindowWidth - 100.f, 55, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
+			if (GuiTextBox({ Constants::WindowWidth - 100.f, 75, 100, 30 }, m_filePathSong, 1024, m_fileBool))
+			{
+				ResetTextbox();
+				m_fileBool = true;
+			}
+
+			GuiDrawText("Event Path", { Constants::WindowWidth - 100.f, 100, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
+			if(GuiTextBox({ Constants::WindowWidth - 100.f, 120, 100, 30 }, m_eventName, 128, m_eventBool))
+			{
+				ResetTextbox();
+				m_eventBool = true;
+			}
+
+			GuiDrawText("BPM", { Constants::WindowWidth - 100.f, 150, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
+			if (GuiTextBox({ Constants::WindowWidth - 100.f, 170, 100, 30 }, m_bpmText, 10, m_bpmBool))
+			{
+				ResetTextbox();
+				m_bpmBool = true;
+			}
+
+			GuiCheckBox({ Constants::WindowWidth - 100.f, 350, 20, 20 }, "Is 3/4?", &m_isThreeFour);
+
+			if (GuiButton({ Constants::WindowWidth - 100.f, 400, 100, 30 }, "Load Song"))
+			{
+				Vector2 Signature = m_isThreeFour ? Vector2({ 3, 4 }) : Vector2({ 4, 4 });
+				RestartSong(atoi(m_bpmText), Signature, Constants::MusicPath + m_filePathSong, m_eventName);
+			}
 
 			GuiUnlock();
 
@@ -233,6 +275,12 @@ void App::Destroy()
 {
 	for (auto& chart : m_Charts)
 	{
+		for (auto& note : chart->GetAllNotes())
+		{
+			delete note;
+			note = nullptr;
+		}
+
 		delete chart;
 		chart = nullptr;
 	}
@@ -295,23 +343,41 @@ void App::ConductorControll()
 void App::ExportFuckingChartGodHelpUsAll()
 {
 	nlohmann::json superCoolData;
+	superCoolData["songPath"] = Conductor::GetSongPath();
+	superCoolData["isBank"] = Conductor::IsBank();
 	superCoolData["songName"] = Conductor::GetSongName();
 	superCoolData["bpm"] = Conductor::BPM;
 	superCoolData["scrollSpeed"] = Conductor::SongSpeed;
 	superCoolData["songLenght"] = Conductor::SongMaxLenght;
+	superCoolData["is3/4"] = Conductor::GetTopNum() == 3 ? true : false;
 	
 	for (auto& chart : m_Charts)
 	{
 		std::vector<Note*> notes = chart->GetAllNotes();
-		std::string owner = chart->GetOwner();
 		for (Note* note : notes)
 		{
 			Note::NoteData data = note->GetNoteData();
-			superCoolData["notes"].emplace_back(nlohmann::json::object({
-				{"time", data.notePosition},
-				{"noteID", data.noteID},
-				{"noteTurn", owner}
-			}));
+
+			if (note->GetNoteData().isSustended == true)
+			{
+				superCoolData["notes"].emplace_back(nlohmann::json::object({
+					{"time", data.notePosition},
+					{"noteID", data.noteID},
+					{"noteTurn", note->owner},
+					{"isSusteded", true},
+					{"susLen", data.sustendedLen},
+					{"susLenCell", data.sustendedCellLen}
+				}));
+			}
+			else
+			{
+				superCoolData["notes"].emplace_back(nlohmann::json::object({
+					{"time", data.notePosition},
+					{"noteID", data.noteID},
+					{"noteTurn", note->owner},
+					{"isSusteded", false },
+				}));
+			}
 		}
 	}
 
@@ -345,4 +411,101 @@ void App::ExportFuckingChartGodHelpUsAll()
 		fileWrite << superCoolData.dump(4);
 		fileWrite.close();
 	}
+}
+
+void App::RestartSong(int BPM, Vector2 Signature, const std::string& songPath, const std::string& eventName = "")
+{
+	for (auto& chart : m_Charts)
+	{
+		for (auto& note : chart->GetAllNotes())
+		{
+			delete note;
+			note = nullptr;
+		}
+
+		delete chart;
+		chart = nullptr;
+	}
+
+	m_Charts.clear();
+	m_ChartNames.clear();
+	m_RendableNotes.clear();
+
+	m_ChartNames.push_back("oldMan");
+	m_ChartNames.push_back("lad");
+
+	Conductor::Init(BPM, Signature.x, Signature.y, songPath, eventName);
+
+	int columFuck = static_cast<int>(std::ceil(Conductor::SongMaxLenght / (Conductor::MSPerBeat / 4.0f)));
+
+	for (size_t i = 0; i < m_ChartNames.size(); i++)
+	{
+		Vector2 pos = { 100 + (i * (Constants::GridWidth * Constants::MaxRows + 50)), m_ChartStartYPos };
+		m_Charts.emplace_back(new ChartRegion(pos, m_ChartNames[i], columFuck));
+	}
+
+	Conductor::SetPosition(0);
+	Conductor::SetPause(true);
+	paused = true;
+	ResetTextbox();
+}
+
+void App::LoadChart(const std::string& path)
+{
+	std::fstream chartFile(path);
+	if (!chartFile.is_open()) {
+		std::cerr << "Cant load File" << std::endl;
+		return;
+	}
+
+	nlohmann::json superCoolChart;
+	try {
+		chartFile >> superCoolChart;
+	}
+	catch (const nlohmann::json::parse_error& e) {
+		std::cerr << "Error cant parse this shit: " << e.what() << std::endl;
+		return;
+	}
+
+	chartFile.close();
+
+	{
+		bool isThereFour = superCoolChart["is3/4"];
+		int ScrollSpeed = superCoolChart["scrollSpeed"];
+		int BPM = superCoolChart["bpm"];
+		int SongLen = superCoolChart["songLenght"];
+		std::string SongPath = superCoolChart["songPath"];
+		bool isSongInBank = superCoolChart["isBank"];
+		std::string SongName = isSongInBank ? superCoolChart["songName"] : "";
+
+		Vector2 Signature = isThereFour ? Vector2({ 3, 4 }) : Vector2({ 4, 4 });
+		RestartSong(BPM, Signature, SongPath, SongName);
+	}
+
+	auto notes = superCoolChart["notes"];
+
+	for (const auto& note : notes)
+	{
+		Note::NoteData data;
+
+		data.isSustended = note["isSusteded"];
+		data.sustendedLen = data.isSustended == true ? note["susLen"] : 0;
+		data.sustendedCellLen = data.isSustended == true ? note["susLenCell"] : 0;
+		data.noteID = note["noteID"];
+		data.notePosition = note["time"];
+		std::string noteTurn = note["noteTurn"];
+
+		for (const auto& chart : m_Charts)
+		{
+			if (chart->GetOwner() == noteTurn)
+				chart->AddNote(data, noteTurn);
+		}
+	}
+}
+
+void App::ResetTextbox()
+{
+	m_bpmBool = false;
+	m_eventBool = false;
+	m_fileBool = false;
 }

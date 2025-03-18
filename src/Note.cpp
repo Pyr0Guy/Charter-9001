@@ -4,7 +4,7 @@
 #include "include/Conductor.hpp"
 #include "include/ResourceManager.hpp"
 
-Note::Note(NoteData& note, Vector2 pos)
+Note::Note(const NoteData& note, Vector2 pos)
 	: m_NoteData(note)
 {
 	m_NoteSprite = new Sprite(pos, Constants::ImagePath + "arrows_basic", "arrow", {0.45, 0.45}, true, 1.f);
@@ -16,6 +16,8 @@ Note::Note(NoteData& note, Vector2 pos)
 	hitProcessed = false;
 	isRendered = false;
 	isDeleted = false;
+
+	owner = "";
 }
 
 Note::~Note()
