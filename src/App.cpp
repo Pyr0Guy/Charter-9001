@@ -40,6 +40,7 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_LinePosition = m_ChartStartYPos;
 	m_bankFileContains = false;
 	m_inTextbox = false;
+	m_ShowFileAllreadyExsistsWindow = false;
 
 	m_MainCamera.target = { 0.f, m_LinePosition };
 	m_MainCamera.rotation = 0.f;
@@ -295,7 +296,6 @@ void App::Draw()
 
 			if (res == 1 || res == 0)
 			{
-				std::cout << "FFAA" << std::endl;
 				m_ShowFileAllreadyExsistsWindow = false;
 				ResetFileDialog();
 			}
@@ -349,34 +349,59 @@ void App::LoadAnimations()
 
 void App::ConductorControll()
 {
+	if (IsKeyPressed(KEY_SPACE))
+	{
+		paused = !paused;
+		Conductor::SetPause(paused);
+	}
+
+	//std::cout << paused << std::endl;
+
 	if (Audio::isLoaded() == true)
 	{
-		if (IsKeyPressed(KEY_SPACE))
+		if (IsKeyPressed('Q'))
 		{
-			paused = !paused;
-			Conductor::SetPause(paused);
+			Conductor::SetPosition(Conductor::SongMaxLenght - 2000);
+			Conductor::SetPause(true);
+			paused = true;
 		}
 
-		if (IsKeyPressed('Q'))
-			Conductor::SetPosition(Conductor::SongMaxLenght - 2000);
-
-		if (Conductor::SongPosition >= Conductor::SongMaxLenght - 1)
+		if (Conductor::SongPosition >= Conductor::SongMaxLenght - 1){
 			Conductor::SetPosition(Conductor::SongMaxLenght);
+			Conductor::SetPause(true);
+			paused = true;
+		}
 
-		if (IsKeyPressed(KEY_ENTER))
+		if (IsKeyPressed(KEY_ENTER)){
 			Conductor::SetPosition(0);
+			Conductor::SetPause(true);
+			paused = true;
+		}
 
-		if (GetMouseWheelMove() != 0)
+		if (GetMouseWheelMove() != 0){
 			Conductor::SetPosition(Conductor::SongPosition - (int)GetMouseWheelMove() * (Constants::MouseWheelMult * 2));
+			Conductor::SetPause(true);
+			paused = true;
+		}
 
-		if (IsKeyDown(KEY_UP))
+		if (IsKeyDown(KEY_UP)){
 			Conductor::SetPosition(Conductor::SongPosition - Constants::MouseWheelMult);
+			Conductor::SetPause(true);
+			paused = true;
+		}
 
-		if (IsKeyDown(KEY_DOWN))
+		if (IsKeyDown(KEY_DOWN)){
 			Conductor::SetPosition(Conductor::SongPosition + Constants::MouseWheelMult);
+			Conductor::SetPause(true);
+			paused = true;
+		}
 
 		if (Conductor::SongPosition <= -1)
+		{
 			Conductor::SetPosition(0);
+			Conductor::SetPause(true);
+			paused = true;
+		}
 	}
 }
 

@@ -72,7 +72,7 @@ file(GLOB FILE_SHIT
     "src/include/**/*.hpp"
 )
 
-set(CMAKE_CXX_STANDARD 17) 
+set(CMAKE_CXX_STANDARD 17)
 add_executable(${PROJECT_NAME} ${FILE_SHIT})
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
