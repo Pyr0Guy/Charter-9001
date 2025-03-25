@@ -35,7 +35,7 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_ChartStartYPos = 100.f;
 
 	m_PlayHitsound = false;
-	
+
 	bg = nullptr;
 	m_LinePosition = m_ChartStartYPos;
 	m_bankFileContains = false;
@@ -47,6 +47,9 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_MainCamera.zoom = 1.f;
 	m_MainCamera.offset = { 0.f , 100.f };
 
+	std::string tempPath = std::string(GetWorkingDirectory()) + "\\assets\\chart\\temp.json";
+	m_fileTempIsFound = CheckIfFileExsist(tempPath);
+
 	std::memset(m_eventName, 0, sizeof(m_eventName));
 	std::memset(m_filePathSong, 0, sizeof(m_filePathSong));
 	std::memset(m_bpmText, 0, sizeof(m_bpmText));
@@ -56,8 +59,12 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_scrollSpeed[1] = '.';
 	m_scrollSpeed[2] = '0';
 
-	m_isThreeFour = false;
 	m_FDstate = FileDialogeState::SaveExportedFiles;
+
+	m_isAutoSaving = false;
+	std::time(&m_startTime);
+	m_AutoSaveThread = std::thread(&App::AutoSave, this);
+	m_AutoSaveThread.detach();
 
 	std::string dir = std::string(GetWorkingDirectory()) + "\\assets\\chart";//Constants::ChartPath;
 	m_FileDialog = InitGuiWindowFileDialog(dir.c_str());
@@ -150,10 +157,10 @@ void App::Update()
 	//Export Chart
 	if (m_FileDialog.SelectFilePressed && m_FDstate == FileDialogeState::SaveExportedFiles)
 	{
-		if (CheckIfFileExsist() == true)
+		if (CheckIfFileExsist(m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText) == true)
 			m_ShowFileAllreadyExsistsWindow = true;
 		else
-			ExportFuckingChartGodHelpUsAll();
+			ExportFuckingChartGodHelpUsAll(m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText);
 	}
 
 	if (m_FileDialog.SelectFilePressed == true && m_FDstate == FileDialogeState::SelectAndLoadJson)
@@ -278,12 +285,14 @@ void App::Draw()
 				Conductor::ScrollSpeed = atof(m_scrollSpeed);
 			}
 
-			GuiCheckBox({ Constants::WindowWidth - 100.f, 350, 20, 20 }, "Is 3/4?", &m_isThreeFour);
-
 			if (GuiButton({ Constants::WindowWidth - 100.f, 400, 100, 30 }, "Load Song"))
 			{
-				Vector2 Signature = m_isThreeFour ? Vector2({ 3, 4 }) : Vector2({ 4, 4 });
-				RestartSong(atoi(m_bpmText), Signature, Constants::MusicPath + m_filePathSong, m_eventName);
+				//RestartSong(atoi(m_bpmText), Signature, Constants::MusicPath + m_filePathSong, m_eventName);
+			}
+
+			if (m_isAutoSaving == true)
+			{
+				DrawText("Autosaving...", Constants::WindowHeight - 100, 0, 32, BLUE);
 			}
 
 			GuiUnlock();
@@ -292,17 +301,34 @@ void App::Draw()
 
 		if (m_ShowFileAllreadyExsistsWindow == true)
 		{
-			int res = GuiMessageBox({ static_cast<float>(Constants::WindowWidth / 2) - 200, static_cast<float>(Constants::WindowHeight / 2) - 200, 400, 400 },"Hold up!","Hey File Already Exsists\nDo you want to re-write it?", "No Fuck you;Yes Fuck you");
+			int res = GuiMessageBox({ static_cast<float>(Constants::WindowWidth / 2) - 200, static_cast<float>(Constants::WindowHeight / 2) - 200, 400, 400 }, "Hold up!", "Hey File Already Exsists\nDo you want to re-write it?", "No Fuck you;Yes Fuck you");
 
 			if (res == 1 || res == 0)
 			{
 				m_ShowFileAllreadyExsistsWindow = false;
 				ResetFileDialog();
 			}
-			else if(res == 2)
+			else if (res == 2)
 			{
+				ExportFuckingChartGodHelpUsAll(m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText);
 				m_ShowFileAllreadyExsistsWindow = false;
-				ExportFuckingChartGodHelpUsAll();
+			}
+		}
+
+		if (m_fileTempIsFound == true)
+		{
+			int res = GuiMessageBox({ static_cast<float>(Constants::WindowWidth / 2) - 200, static_cast<float>(Constants::WindowHeight / 2) - 200, 500, 500 }, "Hold up!", "Hey I see your charter is crashed\nIf it crashed i dont belive you dina\nDo you want to load autosave?", "No Fuck you;Yes Fuck you");
+
+			if (res == 1 || res == 0)
+			{
+				m_fileTempIsFound = false;
+				ResetFileDialog();
+			}
+			else if (res == 2)
+			{
+				m_fileTempIsFound = false;
+				std::string tempPath = std::string(GetWorkingDirectory()) + "\\assets\\chart\\temp.json";
+				LoadChart(tempPath);
 			}
 		}
 
@@ -326,6 +352,9 @@ void App::Destroy()
 	}
 
 	m_Charts.clear();
+
+	std::string tempPath = std::string(GetWorkingDirectory()) + "\\assets\\chart\\temp.json";
+	std::remove(tempPath.c_str());
 
 	Audio::Destroy();
 	CloseWindow();
@@ -405,7 +434,7 @@ void App::ConductorControll()
 	}
 }
 
-void App::ExportFuckingChartGodHelpUsAll()
+void App::ExportFuckingChartGodHelpUsAll(const std::string& filename)
 {
 	nlohmann::json superCoolData;
 	superCoolData["songPath"] = Conductor::GetSongPath();
@@ -414,7 +443,8 @@ void App::ExportFuckingChartGodHelpUsAll()
 	superCoolData["bpm"] = Conductor::BPM;
 	superCoolData["scrollSpeed"] = Conductor::ScrollSpeed;
 	superCoolData["songLenght"] = Conductor::SongMaxLenght;
-	superCoolData["is3/4"] = Conductor::GetTopNum() == 3 ? true : false;
+	superCoolData["TopNum"] = Conductor::GetTopNum();
+	superCoolData["BottomNum"] = Conductor::GetBottomNum();
 	
 	for (auto& chart : m_Charts)
 	{
@@ -446,17 +476,19 @@ void App::ExportFuckingChartGodHelpUsAll()
 		}
 	}
 	
-	char* stringPos = strstr(m_FileDialog.fileNameText, ".json");
+	char* stringPos = strstr((char*)filename.c_str(), ".json");
 	if (stringPos)
 	{
-		size_t fileNameLen = strlen(m_FileDialog.fileNameText);
+		size_t fileNameLen = strlen((char*)filename.c_str());
 		size_t fileExtensionLen = strlen(".json");
 
-		memmove(stringPos, stringPos + fileNameLen, fileNameLen - (stringPos - m_FileDialog.fileNameText) - fileExtensionLen + 1);
+		memmove(stringPos, stringPos + fileNameLen, fileNameLen - (stringPos - (char*)filename.c_str()) - fileExtensionLen + 1);
 	}
 
-	std::string filePath = m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText;
+	std::string filePath = filename.c_str();
 	filePath += ".json";
+
+	m_CurFileName = filename.substr(filename.find_last_of("\\") + 1);
 
 	std::ofstream fileWrite(filePath);
 	if (fileWrite.is_open())
@@ -468,18 +500,18 @@ void App::ExportFuckingChartGodHelpUsAll()
 	ResetFileDialog();
 }
 
-bool App::CheckIfFileExsist()
+bool App::CheckIfFileExsist(const std::string& filename)
 {
-	char* stringPos = strstr(m_FileDialog.fileNameText, ".json");
+	char* stringPos = strstr((char*)filename.c_str(), ".json");
 	if (stringPos)
 	{
-		size_t fileNameLen = strlen(m_FileDialog.fileNameText);
+		size_t fileNameLen = strlen((char*)filename.c_str());
 		size_t fileExtensionLen = strlen(".json");
 
-		memmove(stringPos, stringPos + fileNameLen, fileNameLen - (stringPos - m_FileDialog.fileNameText) - fileExtensionLen + 1);
+		memmove(stringPos, stringPos + fileNameLen, fileNameLen - (stringPos - (char*)filename.c_str()) - fileExtensionLen + 1);
 	}
 
-	std::string filePath = m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText;
+	std::string filePath = filename.c_str();
 	filePath += ".json";
 
 	std::ifstream fileRead(filePath);
@@ -550,7 +582,8 @@ void App::LoadChart(const std::string& path)
 	chartFile.close();
 
 	{
-		bool isThereFour = superCoolChart["is3/4"];
+		float TopNumber = superCoolChart["TopNum"];
+		float BottomNumber = superCoolChart["BottomNum"];
 		int ScrollSpeed = superCoolChart["scrollSpeed"];
 		int BPM = superCoolChart["bpm"];
 		int SongLen = superCoolChart["songLenght"];
@@ -558,8 +591,7 @@ void App::LoadChart(const std::string& path)
 		bool isSongInBank = superCoolChart["isBank"];
 		std::string SongName = isSongInBank ? superCoolChart["songName"] : "";
 
-		Vector2 Signature = isThereFour ? Vector2({ 3, 4 }) : Vector2({ 4, 4 });
-		RestartSong(BPM, Signature, SongPath, SongName);
+		RestartSong(BPM, {TopNumber, BottomNumber}, SongPath, SongName);
 	}
 
 	auto notes = superCoolChart["notes"];
@@ -582,6 +614,9 @@ void App::LoadChart(const std::string& path)
 		}
 	}
 
+	std::string filename = m_FileDialog.fileNameText;
+	m_CurFileName = filename.substr(0,filename.find_last_of("."));
+
 	ResetFileDialog();
 }
 
@@ -599,4 +634,25 @@ void App::ResetFileDialog()
 	m_FileDialog.saveFileMode = false;
 	memset(m_FileDialog.fileNameText, 0, 1024);
 	memset(m_FileDialog.fileNameTextCopy, 0, 1024);
+}
+
+//This function is performant on second thread!!!!! - Pyr0 3.24.2025
+void App::AutoSave()
+{
+	while (true)
+	{
+		std::time_t timeLaps;
+		std::time(&timeLaps);
+
+		//900 is 15 minutes
+		if (timeLaps > m_startTime + 60)
+		{
+			m_isAutoSaving = true;
+			std::string tempFile = m_CurFileName == "" ? "temp" : m_CurFileName;
+			std::string tempPath = std::string(GetWorkingDirectory()) + "\\assets\\chart\\" + tempFile;
+			ExportFuckingChartGodHelpUsAll(tempPath);
+			std::time(&m_startTime);
+			m_isAutoSaving = false;
+		}
+	}
 }

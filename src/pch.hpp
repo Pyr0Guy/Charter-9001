@@ -11,6 +11,8 @@
 #include <cmath>
 #include <array>
 #include <algorithm>
+#include <thread>
+#include <ctime>
 
 //Raylib FUCK
 #include <raylib.h>

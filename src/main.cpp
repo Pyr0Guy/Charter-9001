@@ -1,13 +1,14 @@
 #include "include/App.hpp"
 #include "include/Constants.hpp"
 
-namespace WINDOWS
+/*namespace WINDOWS
 {
 #include "Windows.h"
 }
 
 int WINAPI WinMain(WINDOWS::HINSTANCE hInstance, WINDOWS::HINSTANCE hPrevInstance,
-    WINDOWS::PSTR lpCmdLine, int nCmdShow)
+    WINDOWS::PSTR lpCmdLine, int nCmdShow)*/
+void main()
 {
     App Charter(Constants::WindowWidth, Constants::WindowHeight, Constants::title);
 
@@ -18,6 +19,4 @@ int WINAPI WinMain(WINDOWS::HINSTANCE hInstance, WINDOWS::HINSTANCE hPrevInstanc
     }
 
     Charter.Destroy();
-
-    return 0;
 }
