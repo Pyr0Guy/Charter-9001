@@ -7,7 +7,7 @@ class Note
 public:
 	struct NoteData
 	{
-		unsigned int notePosition;
+		float notePosition;
 		bool isSustended;
 		int sustendedCellLen;
 		int sustendedLen;

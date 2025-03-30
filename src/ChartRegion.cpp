@@ -192,6 +192,8 @@ void ChartRegion::NoteHandling(const Vector2& mousePos)
 				lol.notePosition = m_CurCell->GetCellMS();
 				lol.sustendedLen = 0;
 
+				std::cout << "CurCell MS: " << m_CurCell->GetCellMS() << "\nTime: " << Conductor::SongPosition << "\nMSPerCell: " << Conductor::MSPerCell << std::endl;
+
 				/*
 				m_AllNotes.emplace_back(new Note(lol, m_CurCell->GetPosition()));
 				m_AllNotes.back()->Update();

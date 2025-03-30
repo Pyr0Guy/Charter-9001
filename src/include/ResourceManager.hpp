@@ -2,7 +2,8 @@
 
 namespace FMOD {
 	class Sound;
-	class Channel;
+	class Channel; 
+	class ChannelGroup;
 
 	namespace Studio {
 		class EventInstance;
@@ -21,6 +22,7 @@ private:
 	static std::unordered_map<std::string, Texture2D> m_Textures;
 	static std::unordered_map<std::string, FMOD::Sound*> m_Sounds;
 	static std::unordered_map<std::string, FMOD::Channel*> m_Channels;
+	static std::unordered_map<std::string, std::vector<FMOD::ChannelGroup*>> m_ChannelGroups;
 	static std::unordered_map<std::string, FMOD::Studio::EventInstance*> m_EventInstances;
 	static std::unordered_map<std::string, std::unordered_map<std::string, AnimationFrames>> m_Animations;
 
@@ -31,6 +33,10 @@ public:
 	static FMOD::Channel* LoadChannel(const std::string& name, FMOD::Channel* sound);
 	static FMOD::Channel* GetChannel(const std::string& name);
 	static bool CheckIfChannelExsists(const std::string& name);
+
+	static void LoadEventInstance(const std::string& name, FMOD::Studio::EventInstance* env);
+	static FMOD::Studio::EventInstance* GetEventInstance(const std::string& name);
+	static bool CheckIfInstanceExsists(const std::string& name);
 
 	static void LoadEventInstance(const std::string& name, FMOD::Studio::EventInstance* env);
 	static FMOD::Studio::EventInstance* GetEventInstance(const std::string& name);

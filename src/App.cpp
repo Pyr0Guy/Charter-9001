@@ -55,6 +55,12 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	std::memset(m_bpmText, 0, sizeof(m_bpmText));
 	std::memset(m_scrollSpeed, 0, sizeof(m_scrollSpeed));
 
+	std::memset(m_topNum, 0, sizeof(m_topNum));
+	std::memset(m_bottomNum, 0, sizeof(m_bottomNum));
+
+	m_topNum[0] = '3';
+	m_bottomNum[0] = '4';
+
 	m_scrollSpeed[0] = '1';
 	m_scrollSpeed[1] = '.';
 	m_scrollSpeed[2] = '0';
@@ -89,15 +95,27 @@ void App::Update()
 	m_MainCamera.target = { 0.f, m_LinePosition };
 	unsigned int lastTime = Conductor::SongPosition;
 
+	if (m_fileBool == true)
+	{
+		const char* result = strstr(m_filePathSong, ".bank");
+		if (result != nullptr)
+			m_bankFileContains = true;
+		else
+			m_bankFileContains = false;
+	}
+
 	for (auto& chart : m_Charts)
 	{
-		for (auto& note : chart->GetAllNotes())
+		auto notes = chart->GetAllNotes();
+		for (auto& note : notes)
 		{
 			int NotePos = note->GetNoteData().notePosition;
 			int susNoteEndPos = note->GetNoteData().isSustended ? note->GetNoteData().sustendedLen : 0;
-			
-			int upThing = Conductor::SongPosition - (Conductor::MSPerCell * 3);
+
+			int upThing = lastTime - (Conductor::MSPerCell * 3);
 			int downThing = upThing + (Conductor::MSPerCell * CeilCoundOnTheScreen);
+
+			//std::cout << "Note pos: " << NotePos << "\nTime UP: " << upThing << "\nTime: " << lastTime << std::endl;
 
 			bool isNoteVisible = (NotePos + susNoteEndPos >= upThing) && (NotePos <= downThing);
 
@@ -113,14 +131,7 @@ void App::Update()
 		}
 	}
 
-	if (m_fileBool == true)
-	{
-		const char* result = strstr(m_filePathSong, ".bank");
-		if (result != nullptr)
-			m_bankFileContains = true;
-		else
-			m_bankFileContains = false;
-	}
+	//std::cout << Conductor::SongPosInBeat << std::endl;
 
 	Audio::Update();
 	Conductor::Update();
@@ -285,9 +296,25 @@ void App::Draw()
 				Conductor::ScrollSpeed = atof(m_scrollSpeed);
 			}
 
+			GuiDrawText("Signature", { Constants::WindowWidth - 100.f, 330, 100, 30 }, TEXT_ALIGN_CENTER, GRAY);
+			if (GuiTextBox({ Constants::WindowWidth - 80.f, 360, 20, 20 }, m_topNum, 2, m_topNumBool))
+			{
+				m_inTextbox = !m_inTextbox;
+				m_topNumBool = !m_topNumBool;
+			}
+
+			if (GuiTextBox({ Constants::WindowWidth - 50.f, 360, 20, 20 }, m_bottomNum, 2, m_bottomNumBool))
+			{
+				m_inTextbox = !m_inTextbox;
+				m_bottomNumBool = !m_bottomNumBool;
+			}
+			GuiDrawText("/", { Constants::WindowWidth - 60, 355, 10, 30 }, TEXT_ALIGN_CENTER, GRAY);
+
 			if (GuiButton({ Constants::WindowWidth - 100.f, 400, 100, 30 }, "Load Song"))
 			{
-				//RestartSong(atoi(m_bpmText), Signature, Constants::MusicPath + m_filePathSong, m_eventName);
+				float topNum = atof(m_topNum);
+				float bottomNum = atof(m_bottomNum);
+				RestartSong(atoi(m_bpmText), {topNum, bottomNum}, Constants::MusicPath + m_filePathSong, m_eventName);
 			}
 
 			if (m_isAutoSaving == true)
@@ -626,6 +653,8 @@ void App::ResetTextbox()
 	m_eventBool = false;
 	m_fileBool = false;
 	m_scrollSpeedBool = false;
+	m_bottomNumBool = false;
+	m_topNumBool = false;
 }
 
 void App::ResetFileDialog()
@@ -645,7 +674,7 @@ void App::AutoSave()
 		std::time(&timeLaps);
 
 		//900 is 15 minutes
-		if (timeLaps > m_startTime + 60)
+		if (timeLaps > m_startTime + 900)
 		{
 			m_isAutoSaving = true;
 			std::string tempFile = m_CurFileName == "" ? "temp" : m_CurFileName;

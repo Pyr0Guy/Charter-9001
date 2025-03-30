@@ -71,6 +71,12 @@ private:
 	char m_scrollSpeed[4];
 	bool m_scrollSpeedBool;
 
+	char m_topNum[2];
+	bool m_topNumBool;
+
+	char m_bottomNum[2];
+	bool m_bottomNumBool;
+
 	std::string m_CurFileName;
 
 	bool m_inTextbox;

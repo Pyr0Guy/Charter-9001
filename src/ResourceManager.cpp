@@ -5,6 +5,7 @@
 
 std::unordered_map<std::string, FMOD::Sound*> ResourceManager::m_Sounds;
 std::unordered_map<std::string, FMOD::Channel*> ResourceManager::m_Channels;
+std::unordered_map<std::string, std::vector<FMOD::ChannelGroup*>> ResourceManager::m_ChannelGroups;
 std::unordered_map<std::string, FMOD::Studio::EventInstance*> ResourceManager::m_EventInstances;
 std::unordered_map<std::string, Texture2D>	ResourceManager::m_Textures;
 std::unordered_map<std::string, std::unordered_map<std::string, ResourceManager::AnimationFrames>> ResourceManager::m_Animations;
@@ -17,7 +18,7 @@ FMOD::Sound* ResourceManager::LoadSound(const std::string& name, FMOD::Sound* so
 
 FMOD::Sound* ResourceManager::GetSound(const std::string& name)
 {
-	return m_Sounds[name];
+    return m_Sounds.count(name) ? m_Sounds.at(name) : nullptr;
 }
 
 FMOD::Channel* ResourceManager::LoadChannel(const std::string& name, FMOD::Channel* sound)
@@ -28,12 +29,12 @@ FMOD::Channel* ResourceManager::LoadChannel(const std::string& name, FMOD::Chann
 
 FMOD::Channel* ResourceManager::GetChannel(const std::string& name)
 {
-	return m_Channels[name];
+    return m_Channels.count(name) ? m_Channels.at(name) : nullptr;
 }
 
 bool ResourceManager::CheckIfChannelExsists(const std::string& name)
 {
-	return m_Channels.find(name) != m_Channels.end();
+    return m_Channels.count(name);
 }
 
 void ResourceManager::LoadEventInstance(const std::string& name, FMOD::Studio::EventInstance* env)
@@ -48,7 +49,7 @@ FMOD::Studio::EventInstance* ResourceManager::GetEventInstance(const std::string
 
 bool ResourceManager::CheckIfInstanceExsists(const std::string& name)
 {
-	return m_EventInstances.find(name) != m_EventInstances.end();
+    return m_EventInstances.count(name);
 }
 
 void ResourceManager::LoadTexture2D(const std::string& file, const std::string& name)
@@ -59,7 +60,7 @@ void ResourceManager::LoadTexture2D(const std::string& file, const std::string& 
 
 Texture2D ResourceManager::GetTexture(const std::string& name)
 {
-	return m_Textures[name];
+    return m_Textures.count(name) ? m_Textures.at(name) : Texture2D();
 }
 
 void ResourceManager::DeleteTexture(const std::string& name)

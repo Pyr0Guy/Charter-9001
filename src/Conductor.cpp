@@ -8,8 +8,8 @@ int Conductor::BPM = 0;
 int Conductor::SongMaxLenght = 0;
 int Conductor::SongPosition = 0;
 int Conductor::SongPosInBeat = 0;
-int Conductor::MSPerCell = 0;
 
+float Conductor::MSPerCell = 0;
 float Conductor::MSPerBeat = 0.f;
 
 float Conductor::ScrollSpeed = 1.f;
@@ -52,11 +52,10 @@ void Conductor::Init(int bpm, int TopNum, int BottomNum, const std::string& Song
 
 void Conductor::Update()
 {
-	if (m_inPause == false)
-	{
+	if(m_inPause == false)
 		SongPosition = Audio::GetSongPosition(m_songName);
-		SongPosInBeat = SongPosition / MSPerBeat;
-	}
+
+	SongPosInBeat = SongPosition / MSPerBeat;
 }
 
 void Conductor::SetPause(bool pause)

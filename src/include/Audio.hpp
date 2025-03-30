@@ -5,7 +5,6 @@
 class Audio
 {
 private:
-	static void LoadSongLowLevel(const std::string& path, const std::string& SoundName);
 	static void LoadSongHighLevel(const std::string& path, const std::string& eventName);
 
 	static FMOD::Channel* FindSoundChannel(FMOD::ChannelGroup* channelGroup);

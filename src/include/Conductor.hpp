@@ -27,7 +27,7 @@ public:
 	static int SongPosition;
 	static int SongPosInBeat;
 
-	static int MSPerCell;
+	static float MSPerCell;
 
 	static int BPM;
 

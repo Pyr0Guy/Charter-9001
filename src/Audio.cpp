@@ -33,7 +33,7 @@ void Audio::StartSong(const std::string& path, const std::string& eventName)
 
 	if (fileExtension != "bank" && ResourceManager::CheckIfChannelExsists(fileNameNoExtension) == false)
 	{
-		LoadSongLowLevel(path, fileNameNoExtension);
+		LoadSound(path, fileNameNoExtension);
 		FMOD::Channel* newChannel;
 		ERRCHECK(fmodSysLow->playSound(ResourceManager::GetSound(fileNameNoExtension), nullptr, true, &newChannel));
 		ResourceManager::LoadChannel(fileNameNoExtension, newChannel);
@@ -116,7 +116,7 @@ unsigned int Audio::GetSongLength(const std::string& songName)
 
 void Audio::SetPosition(const std::string& songName, unsigned int Position)
 {
-	if (Position > 0 && Position < Audio::GetSongLength(songName))
+	if (Position >= 0 && Position <= Audio::GetSongLength(songName))
 	{
 		if (auto* sound = ResourceManager::GetChannel(songName))
 		{
@@ -196,13 +196,6 @@ void ERRCHECK_fn(FMOD_RESULT result, const char* file, int line) {
 		std::cout << "FMOD ERROR: Audio.cpp [Line " << line << "] " << result << "  - " << FMOD_ErrorString(result) << '\n';
 }
 
-void Audio::LoadSongLowLevel(const std::string& path, const std::string& SoundName)
-{
-	FMOD::Sound* sound;
-	ERRCHECK(fmodSysLow->createSound(path.c_str(), FMOD_DEFAULT, nullptr, &sound));
-	ResourceManager::LoadSound(SoundName, sound);
-}
-
 void Audio::LoadSongHighLevel(const std::string& path, const std::string& eventName)
 {
 	if (m_masterBankLoaded == false)
@@ -232,6 +225,7 @@ void Audio::LoadSongHighLevel(const std::string& path, const std::string& eventN
 		FMOD::Studio::EventInstance* eventInstance = nullptr;
 
 		ERRCHECK(envDesc->createInstance(&eventInstance));
+		ERRCHECK(eventInstance->setCallback(nullptr));
 		ERRCHECK(eventInstance->start());
 
 		m_PauseVector.push_back(eventInstance);

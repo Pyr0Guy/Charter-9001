@@ -2,7 +2,7 @@
 #include "include/Cell.hpp"
 #include "include/Constants.hpp"
 
-Cell::Cell(int x, int y, int ID, int colum, int CellMS, Color c)
+Cell::Cell(int x, int y, int ID, int colum, float CellMS, Color c)
 	: m_x(x), m_y(y), m_Color(c), m_ID(ID), cellColum(colum), m_CellMS(CellMS)
 {
 	m_Active = false;
@@ -59,7 +59,7 @@ Vector2 Cell::GetPosition() const
 	return pos;
 }
 
-int Cell::GetCellMS() const
+float Cell::GetCellMS() const
 {
 	return m_CellMS;
 }
