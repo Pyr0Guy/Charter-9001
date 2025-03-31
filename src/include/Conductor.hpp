@@ -6,6 +6,7 @@ public:
 
 	static void Init(int bpm, int TopNum, int BottomNum, const std::string& SongPath, const std::string& evetName = "");
 	static void Update();
+	static void DeleteSong();
 
 	static void SetPause(bool pause);
 	static bool GetPause();

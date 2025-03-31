@@ -422,6 +422,7 @@ void App::ConductorControll()
 			paused = true;
 		}
 
+		
 		if (Conductor::SongPosition >= Conductor::SongMaxLenght - 1){
 			Conductor::SetPosition(Conductor::SongMaxLenght);
 			Conductor::SetPause(true);
@@ -573,6 +574,7 @@ void App::RestartSong(int BPM, Vector2 Signature, const std::string& songPath, c
 	m_ChartNames.push_back("oldMan");
 	m_ChartNames.push_back("lad");
 
+	Conductor::DeleteSong();
 	Conductor::Init(BPM, Signature.x, Signature.y, songPath, eventName);
 
 	int columFuck = static_cast<int>(std::ceil(Conductor::SongMaxLenght / (Conductor::MSPerBeat / 4.0f)));

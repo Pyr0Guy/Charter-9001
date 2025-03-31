@@ -5,7 +5,6 @@
 
 std::unordered_map<std::string, FMOD::Sound*> ResourceManager::m_Sounds;
 std::unordered_map<std::string, FMOD::Channel*> ResourceManager::m_Channels;
-std::unordered_map<std::string, std::vector<FMOD::ChannelGroup*>> ResourceManager::m_ChannelGroups;
 std::unordered_map<std::string, FMOD::Studio::EventInstance*> ResourceManager::m_EventInstances;
 std::unordered_map<std::string, Texture2D>	ResourceManager::m_Textures;
 std::unordered_map<std::string, std::unordered_map<std::string, ResourceManager::AnimationFrames>> ResourceManager::m_Animations;
@@ -27,6 +26,14 @@ FMOD::Channel* ResourceManager::LoadChannel(const std::string& name, FMOD::Chann
 	return m_Channels[name];
 }
 
+void ResourceManager::DeleteSound(const std::string& name)
+{
+    if (m_Sounds.count(name))
+    {
+        m_Sounds.erase(name);
+    }
+}
+
 FMOD::Channel* ResourceManager::GetChannel(const std::string& name)
 {
     return m_Channels.count(name) ? m_Channels.at(name) : nullptr;
@@ -37,6 +44,14 @@ bool ResourceManager::CheckIfChannelExsists(const std::string& name)
     return m_Channels.count(name);
 }
 
+void ResourceManager::DeleteChannel(const std::string& name)
+{
+    if (m_Channels.count(name))
+    {
+        m_Channels.erase(name);
+    }
+}
+
 void ResourceManager::LoadEventInstance(const std::string& name, FMOD::Studio::EventInstance* env)
 {
 	m_EventInstances[name] = env;
@@ -44,12 +59,20 @@ void ResourceManager::LoadEventInstance(const std::string& name, FMOD::Studio::E
 
 FMOD::Studio::EventInstance* ResourceManager::GetEventInstance(const std::string& name)
 {
-	return m_EventInstances[name];
+    return m_EventInstances.count(name) ? m_EventInstances.at(name) : nullptr;
 }
 
 bool ResourceManager::CheckIfInstanceExsists(const std::string& name)
 {
     return m_EventInstances.count(name);
+}
+
+void ResourceManager::DeleteEventInstance(const std::string& name)
+{
+    if (m_EventInstances.count(name))
+    {
+        m_EventInstances.erase(name);
+    }
 }
 
 void ResourceManager::LoadTexture2D(const std::string& file, const std::string& name)

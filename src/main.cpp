@@ -1,14 +1,17 @@
 #include "include/App.hpp"
 #include "include/Constants.hpp"
 
-/*namespace WINDOWS
-{
-#include "Windows.h"
-}
+#ifdef IS_RELEASE_BUILD
+    namespace WINDOWS
+    {
+        #include "Windows.h"
+    }
 
 int WINAPI WinMain(WINDOWS::HINSTANCE hInstance, WINDOWS::HINSTANCE hPrevInstance,
-    WINDOWS::PSTR lpCmdLine, int nCmdShow)*/
-void main()
+        WINDOWS::PSTR lpCmdLine, int nCmdShow)
+#else
+    void main()
+#endif
 {
     App Charter(Constants::WindowWidth, Constants::WindowHeight, Constants::title);
 

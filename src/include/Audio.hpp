@@ -15,6 +15,7 @@ public:
 
 	static void StartSong(const std::string& path, const std::string& eventName = "");
 	static void Pause(const std::string& songName ,bool pause);
+	static void DeleteSound(const std::string& soundName, bool isInBank);
 
 	static unsigned int GetSongPosition(const std::string& songName);
 	static unsigned int GetSongLength(const std::string& songName);

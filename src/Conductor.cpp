@@ -58,10 +58,17 @@ void Conductor::Update()
 	SongPosInBeat = SongPosition / MSPerBeat;
 }
 
+void Conductor::DeleteSong()
+{
+	Audio::DeleteSound(m_songName, m_isBank);
+}
+
 void Conductor::SetPause(bool pause)
 {
 	m_inPause = pause;
-	Audio::Pause(m_songName, m_inPause);
+	
+	if(Audio::isLoaded() == true)
+		Audio::Pause(m_songName, m_inPause);
 }
 
 bool Conductor::GetPause()
@@ -77,7 +84,8 @@ bool Conductor::IsBank()
 void Conductor::SetPosition(unsigned int Position)
 {
 	m_inPause = true;
-	Audio::SetPosition(m_songName, Position);
+	if(Audio::isLoaded() == true)
+		Audio::SetPosition(m_songName, Position);
 	SongPosition = Position;
 }
 

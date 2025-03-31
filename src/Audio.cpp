@@ -20,8 +20,16 @@ std::vector<FMOD::Studio::EventInstance*> Audio::m_PauseVector;
 
 void Audio::Init()
 {
+	FMOD_STUDIO_INITFLAGS flagInitStudio = FMOD_STUDIO_INIT_NORMAL;
+	FMOD_INITFLAGS flagInit = FMOD_INIT_NORMAL;
+
+#ifdef IS_DEBUG_BUILD
+	flagInit |= FMOD_INIT_PROFILE_ENABLE;
+	ERRCHECK(FMOD::Debug_Initialize(FMOD_DEBUG_LEVEL_WARNING, FMOD_DEBUG_MODE_TTY));
+#endif // IS_DEBUG_BUILD
+
 	ERRCHECK(FMOD::Studio::System::create(&fmodSys));
-	ERRCHECK(fmodSys->initialize(512, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, 0));
+	ERRCHECK(fmodSys->initialize(512, flagInitStudio, flagInit, 0));
 	ERRCHECK(fmodSys->getCoreSystem(&fmodSysLow));
 }
 
@@ -161,6 +169,13 @@ void Audio::Update()
 				std::string realName = path;
 				realName = realName.substr(realName.find_first_of('/') + 1);
 				Audio::Pause(realName, true);
+
+				FMOD::ChannelGroup* cg = nullptr;
+				ERRCHECK(instance->getChannelGroup(&cg));
+
+				Audio::SetPosition(realName, 0);
+				Audio::Pause(realName, true);
+
 				m_PauseVector.pop_back();
 
 			}
@@ -172,6 +187,24 @@ void Audio::Destroy()
 {
 	masterBank->unload();
 	fmodSys->release();
+}
+
+void Audio::DeleteSound(const std::string& soundName, bool isInBank)
+{
+	if (isInBank == true)
+	{
+		FMOD::Studio::EventInstance* env = ResourceManager::GetEventInstance(soundName);
+		env->stop(FMOD_STUDIO_STOP_IMMEDIATE);
+		env->setCallback(nullptr);
+		env->release();
+
+		ResourceManager::DeleteEventInstance(soundName);
+		return;
+	}
+
+	FMOD::Sound* sound = ResourceManager::GetSound(soundName);
+	sound->release();
+	ResourceManager::DeleteSound(soundName);
 }
 
 bool Audio::isLoaded()
@@ -206,7 +239,7 @@ void Audio::LoadSongHighLevel(const std::string& path, const std::string& eventN
 	}
 
 	ERRCHECK(fmodSys->loadBankFile(path.c_str(), FMOD_STUDIO_LOAD_BANK_NORMAL, &masterBank));
-
+	
 	//StudioSongData lol;
 	//ResourceManager::LoadStudioSongData(eventName, &lol);
 
@@ -226,6 +259,15 @@ void Audio::LoadSongHighLevel(const std::string& path, const std::string& eventN
 
 		ERRCHECK(envDesc->createInstance(&eventInstance));
 		ERRCHECK(eventInstance->setCallback(nullptr));
+
+		/*
+		FMOD::Studio::Bus* bus = nullptr;
+		ERRCHECK(fmodSys->getBus("bus:/", &bus));
+
+		if (bus)
+			ERRCHECK(bus->lockChannelGroup());
+		*/
+
 		ERRCHECK(eventInstance->start());
 
 		m_PauseVector.push_back(eventInstance);
@@ -290,16 +332,15 @@ std::vector<FMOD::Channel*> Audio::FindSoundChannels(FMOD::ChannelGroup* channel
 
 	std::vector<FMOD::Channel*> channelVector;
 
-	FMOD::Channel* chan = nullptr;
-	FMOD::Sound* sound = nullptr;
-
 	int numChannels = 0;
 	if (channelGroup->getNumChannels(&numChannels) == FMOD_OK && numChannels > 0)
 	{
 		for (int i = 0; i < numChannels; ++i)
 		{
-			if (channelGroup->getChannel(i, &chan) == FMOD_OK)
+			FMOD::Channel* chan = nullptr;
+			if (channelGroup->getChannel(i, &chan) == FMOD_OK && chan)
 			{
+				FMOD::Sound* sound = nullptr;
 				if (chan->getCurrentSound(&sound) == FMOD_OK && sound)
 				{
 					channelVector.push_back(chan);
@@ -311,21 +352,21 @@ std::vector<FMOD::Channel*> Audio::FindSoundChannels(FMOD::ChannelGroup* channel
 	int numGroups = 0;
 	if (channelGroup->getNumGroups(&numGroups) == FMOD_OK && numGroups > 0)
 	{
-		FMOD::ChannelGroup* child = nullptr;
-
 		for (int i = 0; i < numGroups; ++i)
 		{
+			FMOD::ChannelGroup* child = nullptr;
 			if (channelGroup->getGroup(i, &child) == FMOD_OK && child)
 			{
-				chan = FindSoundChannel(child);
-				if (chan)
-				{
-					channelVector.push_back(chan);
-				}
+				auto childChannels = FindSoundChannels(child);
+
+				channelVector.insert(
+					channelVector.end(),
+					childChannels.begin(),
+					childChannels.end()
+				);
 			}
 		}
 	}
 
-	//std::cout << channelVector.size() << std::endl;
 	return channelVector;
 }
