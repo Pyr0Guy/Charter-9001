@@ -1,12 +1,24 @@
+/*
+#################################################################################
+									App.cpp
+
+This is the REAL main function - where all the magic happens. Here we initialize 
+every damn thing: sound systems, graphics, resources, you name it. This is the 
+beating heart of the app - where updates fire, rendering happens, saves trigger, 
+and everything else comes to life. Some functions needs to move in other
+cpp files but im lazy
+#################################################################################
+*/
+
 #include "pch.hpp"
 
 #include "raymath.h"
 
-#define RAYGUI_IMPLEMENTATION
+#define RAYGUI_IMPLEMENTATION	//Fuck how do i even suppose to know that 
 #include "include/raygui/raygui.h"
 #undef RAYGUI_IMPLEMENTATION 
 
-#define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
+#define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION //Fuck how do i even suppose to know that 
 #include "include/raygui/gui_window_file_dialog.h"
 
 #include "include/App.hpp"
@@ -22,13 +34,12 @@
 bool paused = true;
 GuiWindowFileDialogState m_FileDialog;
 
-int CeilCoundOnTheScreen = 12;
-
 App::App(unsigned int Width, unsigned int Height, const std::string& title)
 {
 	InitWindow(Width, Height, title.c_str());
 	SetTargetFPS(60);
 
+	//In the future i want to add chart for all background characters (fuck you dinebon_)
 	m_Charts.reserve(2);
 	m_RendableNotes.reserve(20);
 
@@ -47,14 +58,15 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	m_MainCamera.zoom = 1.f;
 	m_MainCamera.offset = { 0.f , 100.f };
 
+	//Check if temp files is still here, if it's not deleted than it's mean the program crash
 	std::string tempPath = std::string(GetWorkingDirectory()) + "\\assets\\chart\\temp.json";
 	m_fileTempIsFound = CheckIfFileExsist(tempPath);
 
+	//Init all textbars
 	std::memset(m_eventName, 0, sizeof(m_eventName));
 	std::memset(m_filePathSong, 0, sizeof(m_filePathSong));
 	std::memset(m_bpmText, 0, sizeof(m_bpmText));
 	std::memset(m_scrollSpeed, 0, sizeof(m_scrollSpeed));
-
 	std::memset(m_topNum, 0, sizeof(m_topNum));
 	std::memset(m_bottomNum, 0, sizeof(m_bottomNum));
 
@@ -67,21 +79,25 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 
 	m_FDstate = FileDialogeState::SaveExportedFiles;
 
+	CellCoundOnTheScreen = 12;
+
+	//Create a second thread for autosaving (probably stupid idea but it's to late)
 	m_isAutoSaving = false;
 	std::time(&m_startTime);
 	m_AutoSaveThread = std::thread(&App::AutoSave, this);
 	m_AutoSaveThread.detach();
 
+	//Init the path for dialog window in Raygui File Dialog Window
 	std::string dir = std::string(GetWorkingDirectory()) + "\\assets\\chart";//Constants::ChartPath;
 	m_FileDialog = InitGuiWindowFileDialog(dir.c_str());
 
 	Audio::Init();
-	Audio::LoadSound(Constants::SoundPath + "click.wav", "hitsound");
+	Audio::LoadSound(Constants::SoundPath + "click.wav", "hitsound"); //Load Hitsound sound in to the memory
 
-	ResourceManager::LoadTexture2D(Constants::ImagePath + "arrows_basic.png", "arrow");
+	ResourceManager::LoadTexture2D(Constants::ImagePath + "arrows_basic.png", "arrow"); //Load Arrows graphics in to the memory 
 	LoadAnimations();
 
-	RestartSong(114, { 3, 4 }, Constants::MusicPath + "Episode Songs.bank", "e0-s1");
+	RestartSong(114, { 3, 4 }, Constants::MusicPath + "Episode Songs.bank", "e0-s1"); //Restart song
 }
 
 void App::Update()
@@ -93,8 +109,11 @@ void App::Update()
 	}
 
 	m_MainCamera.target = { 0.f, m_LinePosition };
+
+	//Get Song Position from previous frame
 	unsigned int lastTime = Conductor::SongPosition;
 
+	//So basically i need to check for file extension, so if file extension is bank i activate second textbox
 	if (m_fileBool == true)
 	{
 		const char* result = strstr(m_filePathSong, ".bank");
@@ -104,6 +123,7 @@ void App::Update()
 			m_bankFileContains = false;
 	}
 
+	//Add the notes that visible to user in m_RendableNotes and delete one that is not visible
 	for (auto& chart : m_Charts)
 	{
 		auto notes = chart->GetAllNotes();
@@ -112,10 +132,9 @@ void App::Update()
 			int NotePos = note->GetNoteData().notePosition;
 			int susNoteEndPos = note->GetNoteData().isSustended ? note->GetNoteData().sustendedLen : 0;
 
-			int upThing = lastTime - (Conductor::MSPerCell * 3);
-			int downThing = upThing + (Conductor::MSPerCell * CeilCoundOnTheScreen);
-
-			//std::cout << "Note pos: " << NotePos << "\nTime UP: " << upThing << "\nTime: " << lastTime << std::endl;
+			constexpr int cellsAboveRedLine = 3;
+			int upThing = lastTime - (Conductor::MSPerCell * cellsAboveRedLine);
+			int downThing = upThing + (Conductor::MSPerCell * CellCoundOnTheScreen);
 
 			bool isNoteVisible = (NotePos + susNoteEndPos >= upThing) && (NotePos <= downThing);
 
@@ -131,13 +150,14 @@ void App::Update()
 		}
 	}
 
-	//std::cout << Conductor::SongPosInBeat << std::endl;
-
+	//Update song and Song Position
 	Audio::Update();
 	Conductor::Update();
 
+	//Cast absovute mouse position to mouse position relative to game world
 	m_WorldMousePos = GetScreenToWorld2D(GetMousePosition(), m_MainCamera);
 
+	//If user in file dialog dont update chart sections
 	if (m_FileDialog.windowActive == false && m_inTextbox == false)
 	{
 		for (auto& chart : m_Charts)
@@ -147,6 +167,7 @@ void App::Update()
 	}
 
 	//Funne
+	//I have nothing to do so you can use you'r images as background in this app
 	if (IsFileDropped())
 	{
 		FilePathList droppedFiles = LoadDroppedFiles();
@@ -166,17 +187,21 @@ void App::Update()
 	}
 
 	//Export Chart
+	//If we selected files and state off file dialog is saving, try to save files
 	if (m_FileDialog.SelectFilePressed && m_FDstate == FileDialogeState::SaveExportedFiles)
 	{
+		//Check if this file exist, if so than ask user if he want's to rewrite it (yes i see that misspelling) 
 		if (CheckIfFileExsist(m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText) == true)
 			m_ShowFileAllreadyExsistsWindow = true;
 		else
 			ExportFuckingChartGodHelpUsAll(m_FileDialog.dirPathText + std::string("\\") + m_FileDialog.fileNameText);
 	}
 
+	//If we open file dialog and state off file dialog is loading, load chart
 	if (m_FileDialog.SelectFilePressed == true && m_FDstate == FileDialogeState::SelectAndLoadJson)
 		LoadChart(std::string(m_FileDialog.dirPathText) + "\\" + std::string(m_FileDialog.fileNameText));
 	
+	//Hitsounds logic
 	if (m_PlayHitsound == true && paused == false)
 	{
 		for (auto& note : m_RendableNotes)
@@ -188,16 +213,19 @@ void App::Update()
 		}
 	}
 
+	//Update line position after we calculate everything else
 	float cellDuration = Conductor::MSPerBeat / 4.0f;
 	float cell = Conductor::SongPosition / cellDuration;
 	m_LinePosition = 100.f + (cell * Constants::GridHeight);
 
+	//Delete notes that is not visible at the end of update function
 	for (size_t i = 0; i < m_RendableNotes.size(); i++)
 	{
 		if (m_RendableNotes[i]->isDeleted == true || m_RendableNotes[i]->isRendered == false)
 			m_RendableNotes.erase(m_RendableNotes.begin() + i);
 	}
 
+	//So here we delete notes too
 	for (auto& chart : m_Charts)
 	{
 		std::vector<Note*>& notes = chart->GetAllNotes();
@@ -213,6 +241,7 @@ void App::Update()
 	}
 }
 
+//With RayGui this Draw function looks fucking terrible
 void App::Draw()
 {
 	BeginDrawing();
@@ -364,6 +393,7 @@ void App::Draw()
 	EndDrawing();
 }
 
+//Clearing all this crap
 void App::Destroy()
 {
 	for (auto& chart : m_Charts)
@@ -392,7 +422,6 @@ bool App::IsClosed()
 	return WindowShouldClose();
 }
 
-
 void App::LoadAnimations()
 {
 	for (int i = 0; i < Constants::arrowsList.size(); i++)
@@ -403,6 +432,7 @@ void App::LoadAnimations()
 	}
 }
 
+//This is where we interact with our conductor, maybe it's should be in Conductor.cpp but who cares? (me)
 void App::ConductorControll()
 {
 	if (IsKeyPressed(KEY_SPACE))
@@ -423,8 +453,8 @@ void App::ConductorControll()
 		}
 
 		
-		if (Conductor::SongPosition >= Conductor::SongMaxLenght - 1){
-			Conductor::SetPosition(Conductor::SongMaxLenght);
+		if (Conductor::SongPosition >= Conductor::SongMaxLenght - 50){
+			Conductor::SetPosition(Conductor::SongMaxLenght - 50);
 			Conductor::SetPause(true);
 			paused = true;
 		}
@@ -481,6 +511,7 @@ void App::ExportFuckingChartGodHelpUsAll(const std::string& filename)
 		{
 			Note::NoteData data = note->GetNoteData();
 
+			//So i don't need some information if note is not sustended but idk how to code this propaply
 			if (note->GetNoteData().isSustended == true)
 			{
 				superCoolData["notes"].emplace_back(nlohmann::json::object({
@@ -553,6 +584,7 @@ bool App::CheckIfFileExsist(const std::string& filename)
 	return false;
 }
 
+//Clear all crap when we load new song
 void App::RestartSong(int BPM, Vector2 Signature, const std::string& songPath, const std::string& eventName = "")
 {
 	for (auto& chart : m_Charts)

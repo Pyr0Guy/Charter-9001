@@ -38,6 +38,7 @@ private:
 	float m_LinePosition;
 
 	Vector2 m_WorldMousePos;
+	int CellCoundOnTheScreen;
 
 	//Vectors for future
 	float m_ChartStartYPos;

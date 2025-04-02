@@ -168,10 +168,6 @@ void Audio::Update()
 				envDesc->getPath(path, sizeof(path), &retrieved);
 				std::string realName = path;
 				realName = realName.substr(realName.find_first_of('/') + 1);
-				Audio::Pause(realName, true);
-
-				FMOD::ChannelGroup* cg = nullptr;
-				ERRCHECK(instance->getChannelGroup(&cg));
 
 				Audio::SetPosition(realName, 0);
 				Audio::Pause(realName, true);
@@ -259,14 +255,6 @@ void Audio::LoadSongHighLevel(const std::string& path, const std::string& eventN
 
 		ERRCHECK(envDesc->createInstance(&eventInstance));
 		ERRCHECK(eventInstance->setCallback(nullptr));
-
-		/*
-		FMOD::Studio::Bus* bus = nullptr;
-		ERRCHECK(fmodSys->getBus("bus:/", &bus));
-
-		if (bus)
-			ERRCHECK(bus->lockChannelGroup());
-		*/
 
 		ERRCHECK(eventInstance->start());
 
