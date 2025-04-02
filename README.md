@@ -1,6 +1,6 @@
 ![Charter-9001Logo](docs/logo.png)
 
-Charter-9001 is a tool for placing musical notes in songs for the game that called The Bass That Should Be Heard.
+Charter-9001 is a tool for placing musical notes in songs for the game that called `The Bass That Should Be Heard`.
 
 # Compilation:
 If you want to compile this piece of code [download FMOD](https://www.fmod.com/download). And install it.
