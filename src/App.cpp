@@ -39,6 +39,10 @@ App::App(unsigned int Width, unsigned int Height, const std::string& title)
 	InitWindow(Width, Height, title.c_str());
 	SetTargetFPS(60);
 
+	Image icon = LoadImage(std::string(Constants::ImagePath + "icon_128x128.png").c_str());
+	SetWindowIcon(icon);
+	icon = { 0 };
+
 	//In the future i want to add chart for all background characters (fuck you dinebon_)
 	m_Charts.reserve(2);
 	m_RendableNotes.reserve(20);
